@@ -204,12 +204,7 @@ select.field option{background:var(--s2)}
 .mob-nav a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;color:var(--t3);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;transition:color .15s}
 .mob-nav a.active{color:var(--g1)}
 .mob-nav a span{font-size:20px;line-height:1}
-.float-nav{position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:200;display:flex;flex-direction:column;background:var(--s2);border:1px solid var(--line2);border-right:none;border-radius:10px 0 0 10px;overflow:hidden}
-.float-nav a{display:flex;align-items:center;justify-content:center;width:36px;height:42px;text-decoration:none;font-size:15px;transition:background .15s;color:var(--t3)}
-.float-nav a:hover{background:var(--s4);color:var(--t1)}
-.float-nav a.active{background:var(--s3);color:var(--t1)}
-.float-nav-sep{height:1px;background:var(--line)}
-@media(max-width:900px){.float-nav{display:none}}
+
 @keyframes xpFloat{0%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}100%{opacity:0;transform:translateX(-50%) translateY(-70px) scale(1.3)}}
 .task-item.golden .task-name::after{content:' ✶';color:var(--y1);font-size:10px}
 .task-item.golden{border-color:rgba(245,158,11,.2)}
@@ -217,9 +212,24 @@ select.field option{background:var(--s2)}
 .achieve-item.epic{border-color:rgba(168,85,247,.4)!important}
 .achieve-item.legendary{border-color:rgba(245,158,11,.45)!important}
 
+
+.switcher{position:fixed;top:0;left:0;right:0;height:40px;background:var(--s1);border-bottom:1px solid var(--line2);z-index:8000;display:flex;align-items:center;justify-content:center;gap:4px}
+.sw-btn{padding:5px 18px;border-radius:var(--rx);font-size:11px;font-weight:800;text-decoration:none;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;transition:all .18s;border:1px solid transparent;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;background:transparent}
+.sw-btn:hover{color:var(--t2)}
+.sw-btn.active{background:var(--s4);color:var(--t1);border-color:var(--line2)}
+body{padding-top:40px}
+@media(max-width:700px){
+  .switcher{top:auto;bottom:0;border-top:1px solid var(--line2);border-bottom:none}
+  body{padding-top:0;padding-bottom:40px}
+}
+
 </style>
 </head>
 <body>
+<div class="switcher">
+  <a href="index.html" class="sw-btn">💰 Finance</a>
+  <a href="tasks.html" class="sw-btn active">⚡ Grind</a>
+</div>
 <div id="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">FIN</div>
@@ -231,15 +241,10 @@ select.field option{background:var(--s2)}
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<div class="float-nav">
-  <a href="index.html" title="Finance">💰</a>
-  <div class="float-nav-sep"></div>
+
   <a href="tasks.html" class="active" title="Grind">⚡</a>
 </div>
-<nav class="mob-nav">
-  <a href="index.html"><span>💰</span>Finance</a>
-  <a href="tasks.html" class="active"><span>⚡</span>Grind</a>
-</nav>
+
 <div class="app">
 <!-- LEFT -->
 <div class="col">
@@ -444,7 +449,10 @@ select.field option{background:var(--s2)}
 
 <script>
 const SB_AUTH='https://ftxgcggckwwjkxnlmfxs.supabase.co';
+const SB='https://ftxgcggckwwjkxnlmfxs.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eGdjZ2dja3d3amt4bmxtZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzODcyNjAsImV4cCI6MjA5Mzk2MzI2MH0.6f3ygks9oIQp1vM43qt3Z7qf0T2Ouo74kLwjw2MZkO8';
+const KEY=SB_KEY;
+const H={'apikey':SB_KEY,'Authorization':'Bearer '+(localStorage.getItem('sb_token')||SB_KEY),'Content-Type':'application/json','Prefer':'return=representation'};
 
 async function doLogin(){
   const email=document.getElementById('auth-email').value.trim();
