@@ -455,9 +455,10 @@ select.field option{background:var(--s2)}
 <script>
 const SB_AUTH='https://ftxgcggckwwjkxnlmfxs.supabase.co';
 const SB=SB_AUTH;
-function getH(){const t=localStorage.getItem('sb_token');return {'apikey':SB_AUTH,'Authorization':'Bearer '+(t||SB_AUTH),'Content-Type':'application/json','Prefer':'return=representation'};}
-const H=new Proxy({},{get(_,k){return getH()[k];}});
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eGdjZ2dja3d3amt4bmxtZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzODcyNjAsImV4cCI6MjA5Mzk2MzI2MH0.6f3ygks9oIQp1vM43qt3Z7qf0T2Ouo74kLwjw2MZkO8';
+const KEY=SB_KEY;
+
+function getH(){return typeof getAuthHeader==='function'?getAuthHeader():{'apikey':SB_AUTH,'Authorization':'Bearer '+(localStorage.getItem('sb_token')||SB_AUTH),'Content-Type':'application/json','Prefer':'return=representation'};}
 
 async function doLogin(){
   const email=document.getElementById('auth-email').value.trim();
@@ -537,6 +538,11 @@ function getAuthHeader(){
 }
 
 window.addEventListener('DOMContentLoaded',checkAuth);
+// Auto-refresh every 50 min to stay logged in forever
+setInterval(async()=>{
+  if(localStorage.getItem('sb_refresh'))await refreshToken();
+},50*60*1000);
+
 const GEMINI_KEY='AIzaSyC0NVD4hjX0TJ67-C7hZXqeKJSisRq95Dc';
 const today=new Date().toISOString().slice(0,10);
 const MAX_SKIPS=3;
@@ -629,15 +635,11 @@ const RANDOM_EVENTS=[
 let tasks=[],completions=[],lazyMode=false,timerIntervals={};
 let dailyRoll=null,todaySkips=0,doubleXP=false;
 
-// Auto-refresh every 50 min to stay logged in forever
-setInterval(async()=>{
-  if(localStorage.getItem('sb_refresh'))await refreshToken();
-},50*60*1000);
 
 // DB
-const dbGet=(t,q='')=>fetch(SB+'/rest/v1/'+t+'?'+q,{headers:getH()}).then(r=>r.ok?r.json():null).catch(()=>null);
-const dbIns=(t,d)=>fetch(SB+'/rest/v1/'+t,{method:'POST',headers:getH(),body:JSON.stringify(d)}).then(r=>{if(!r.ok)return r.text().then(e=>{console.error(t,r.status,e);return null;});return r.json();}).catch(()=>null);
-const dbDel=(t,id)=>fetch(SB+'/rest/v1/'+t+'?id=eq.'+id,{method:'DELETE',headers:getH()}).then(r=>r.ok).catch(()=>false);
+const dbGet=(t,q='')=>fetch(SB+'/rest/v1/'+t+'?'+q,{headers:getAuthHeader()}).then(r=>r.ok?r.json():null).catch(()=>null);
+const dbIns=(t,d)=>fetch(SB+'/rest/v1/'+t,{method:'POST',headers:getAuthHeader(),body:JSON.stringify(d)}).then(r=>{if(!r.ok)return r.text().then(e=>{console.error(t,r.status,e);return null;});return r.json();}).catch(()=>null);
+const dbDel=(t,id)=>fetch(SB+'/rest/v1/'+t+'?id=eq.'+id,{method:'DELETE',headers:getAuthHeader()}).then(r=>r.ok).catch(()=>false);
 function setSS(ok,msg){document.getElementById('sync-dot').className='sync-dot'+(ok?'':' err');document.getElementById('sync-lbl').textContent=msg;}
 
 async function init(){
