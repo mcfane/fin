@@ -790,12 +790,12 @@ function makeTask(t,done,skipped){
   const id=String(t.id);
   const timer=t.has_timer&&!done&&!skipped?'<button class="task-btn timer-btn'+(timerIntervals[id]?' running':'')+'" onclick="startTimer(\''+id+'\',event)">'+(timerIntervals[id]?'<span id="tc-'+id+'">0:00</span>':'\u25B65m')+'</button>':'';
   const skip=!done&&!skipped&&todaySkips<MAX_SKIPS?'<button class="task-btn skip-btn" onclick="skipTask(\''+id+'\',event)">Skip</button>':'';
-  const vote=done&&!localStorage.getItem('grind_vote_'+today+'_'+id)?'<div class="diff-vote"><button class="dvb easy" onclick="voteTask(\''+id+'\',\'easy\',event)">Easy</button><button class="dvb meh" onclick="voteTask(\''+id+'\',\'meh\',event)">Meh</button><button class="dvb hard" onclick="voteTask(\''+id+'\',\'hard\',event)">Hard</button></div>':'';
+  const vote='';
   return '<div class="task-item'+(done?' done':skipped?' skipped':'')+'" onclick="toggleTask(\''+id+'\','+t.xp+','+done+','+skipped+')">'
     +'<div class="task-check">'+(done?'\u2713':skipped?'\u2014':'')+'</div>'
     +'<div class="task-info"><div class="task-name">'+t.name+'</div>'
     +'<div class="task-meta"><span class="task-xp">+'+t.xp+'xp</span><span class="'+dc+'">'+(t.difficulty||'medium')+'</span>'+timer+skip+'</div>'
-    +vote+'</div></div>';
+    +'</div></div>';
 }
 
 function floatXP(amt,neg){
@@ -1157,16 +1157,17 @@ async function resetAllXP(){
   showToast('XP reset. Fresh start!',2000);
   renderAll();
 }
+let _checkingAch=false;
 function checkNewAchievements(){
+  if(_checkingAch)return;
+  _checkingAch=true;
+  setTimeout(()=>{_checkingAch=false;},3000);
   ACHIEVES.forEach(a=>{
     const key='grind_ach_'+a.name;
     if(!localStorage.getItem(key)&&a.check()){
-      localStorage.setItem(key,'1'); // mark immediately before async call
+      localStorage.setItem(key,'1');
       dbIns('grind_completions',{task_id:-995,date:today,xp:a.xp}).then(r=>{
-        if(r){
-          completions.push(Array.isArray(r)?r[0]:r);
-          showToast(a.icon+' '+a.name+' +'+a.xp+' XP',2500);
-        }
+        if(r){completions.push(Array.isArray(r)?r[0]:r);showToast(a.icon+' '+a.name+' +'+a.xp+' XP',2500);}
       });
     }
   });
