@@ -620,16 +620,28 @@ const BUILT_IN=[
 ];
 
 const REQUIRED_TASKS=[
-  // AFTER WAKING UP (no time, just sequence)
-  {id:-101,name:'Wash face',                  xp:10,cat:'life',icon:'🪧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
-  {id:-102,name:'Drink water before 1st smoke',xp:15,cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
-  {id:-103,name:'5 min stretch on floor',      xp:20,cat:'body',icon:'🧘',difficulty:'easy',has_timer:true, required:true,time_slot:'morning'},
-  // DURING THE DAY
-  {id:-104,name:'Every smoke — stand at window',xp:10,cat:'body',icon:'🚬',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  {id:-105,name:'Get up from desk once today',  xp:10,cat:'body',icon:'🚶',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  {id:-106,name:'Drink 2 glasses of water',     xp:10,cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  // EVENING
-  {id:-107,name:'Step outside for 5 min',       xp:25,cat:'body',icon:'🌿',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  // BEFORE COMPUTER
+  {id:-101,name:'Wash face',                   xp:5, cat:'life',icon:'💦',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-102,name:'Brush teeth',                 xp:5, cat:'life',icon:'🪷',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-103,name:'Drink water',                 xp:5, cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-104,name:'Stretch 2 min',               xp:10,cat:'body',icon:'🧘',difficulty:'easy',has_timer:true, required:true,time_slot:'morning'},
+  {id:-105,name:'Write one goal',              xp:5, cat:'mind',icon:'✏️',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-117,name:'Vitamins',                    xp:10,cat:'body',icon:'💊',difficulty:'easy',has_timer:false,required:true,time_slot:'morning',note:'Omega-3 · B-100 · D3'},
+  // BREAK THE LOOP
+  {id:-106,name:'Smoke at window',             xp:10,cat:'life',icon:'🚬',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-107,name:'Stand up 2 min',              xp:5, cat:'body',icon:'🚶',difficulty:'easy',has_timer:true, required:true,time_slot:'day'},
+  {id:-108,name:'Drink water again',           xp:5, cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-109,name:'Eat before smoking',          xp:10,cat:'body',icon:'🍜',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-110,name:'Open window',                 xp:5, cat:'body',icon:'🪟',difficulty:'easy',has_timer:true, required:true,time_slot:'day'},
+  {id:-111,name:'10 squats',                   xp:10,cat:'body',icon:'💪',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-118,name:'Vitamins',                    xp:5, cat:'body',icon:'💊',difficulty:'easy',has_timer:false,required:true,time_slot:'day',note:'Zinc — after food'},
+  // BEFORE SLEEP
+  {id:-112,name:'Go outside 5 min',            xp:20,cat:'body',icon:'🌃',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  {id:-113,name:'Tidy desk',                   xp:5, cat:'life',icon:'🧹',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  {id:-114,name:'Phone down 20 min',           xp:10,cat:'mind',icon:'📵',difficulty:'easy',has_timer:true, required:true,time_slot:'evening'},
+  {id:-115,name:'Wash face',                   xp:5, cat:'life',icon:'💦',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  {id:-116,name:'Brush teeth',                 xp:5, cat:'life',icon:'🪷',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  {id:-119,name:'Vitamins',                    xp:10,cat:'body',icon:'💊',difficulty:'easy',has_timer:false,required:true,time_slot:'evening',note:'Magnesium · GABA · L-theanine'},
 ];
 
 const BONUS_QUESTS=[
@@ -709,8 +721,8 @@ function getBestStreak(){
   return best;
 }
 function getMult(streak){if(streak>=30)return 2.0;if(streak>=7)return 1.5;if(streak>=3)return 1.2;return 1.0;}
-function getTodayXP(){return completions.filter(c=>c.date===today||c.session_key===sessionKey).reduce((s,c)=>s+(c.xp||0),0);}
-function getDoneIds(){return completions.filter(c=>c.date===today||c.session_key===sessionKey).map(c=>String(c.task_id));}
+function getTodayXP(){return completions.filter(c=>c.session_key===sessionKey||(!c.session_key&&c.date===today)).reduce((s,c)=>s+(c.xp||0),0);}
+function getDoneIds(){return completions.filter(c=>c.session_key===sessionKey||(!c.session_key&&c.date===today)).map(c=>String(c.task_id));}
 function getSkippedIds(){return JSON.parse(localStorage.getItem('grind_skipped_'+sessionKey)||'[]');}
 
 function getActiveTasks(){
@@ -790,7 +802,7 @@ function makeTask(t,done,skipped){
   const vote=done&&!localStorage.getItem('grind_vote_'+sessionKey+'_'+id)?'<div class="diff-vote"><button class="dvb easy" onclick="voteTask(\''+id+'\',\'easy\',event)">Easy</button><button class="dvb meh" onclick="voteTask(\''+id+'\',\'meh\',event)">Meh</button><button class="dvb hard" onclick="voteTask(\''+id+'\',\'hard\',event)">Hard</button></div>':'';
   return '<div class="task-item'+(done?' done':skipped?' skipped':'')+'" onclick="toggleTask(\''+id+'\','+t.xp+','+done+','+skipped+')">'
     +'<div class="task-check">'+(done?'\u2713':skipped?'\u2014':'')+'</div>'
-    +'<div class="task-info"><div class="task-name">'+t.name+'</div>'
+    +'<div class="task-info"><div class="task-name">'+t.name+(t.note?'<span style="font-size:10px;color:var(--t3);margin-left:5px">('+t.note+')</span>':'')+'</div>'
     +'<div class="task-meta"><span class="task-xp">+'+t.xp+'xp</span><span class="'+dc+'">'+(t.difficulty||'medium')+'</span>'+timer+skip+'</div>'
     +vote+'</div></div>';
 }
@@ -815,7 +827,7 @@ async function toggleTask(taskId,xp,done,skipped){
     const mult=getMult(getStreak());const earned=Math.round(xp*mult*(doubleXP?2:1));
     if(doubleXP){doubleXP=false;localStorage.removeItem('grind_double_'+sessionKey);}
     setSS(false,'saving...');
-    const r=await dbIns('grind_completions',{task_id:parseInt(taskId)||0,date:today,xp:earned});
+    const r=await dbIns('grind_completions',{task_id:parseInt(taskId)||0,date:new Date().toISOString().slice(0,10),xp:earned,session_key:sessionKey});
     if(r){completions.push(Array.isArray(r)?r[0]:r);setSS(true,'saved');floatXP(earned,false);checkNewAchievements();showToast('+'+earned+' XP'+(mult>1?' (\xD7'+mult+')':''));checkLevelUp();}
     else setSS(false,'error');
   }
@@ -827,7 +839,7 @@ async function skipTask(id,e){
   if(todaySkips>=MAX_SKIPS){showToast('No skips left!');return;}
   const s=getSkippedIds();s.push(id);localStorage.setItem('grind_skipped_'+sessionKey,JSON.stringify(s));
   todaySkips++;localStorage.setItem('grind_skips_'+sessionKey,todaySkips);
-  const pen=await dbIns('grind_completions',{task_id:-999,date:today,xp:-5});
+  const pen=await dbIns('grind_completions',{task_id:-999,date:new Date().toISOString().slice(0,10),xp:-5});
   if(pen)completions.push(Array.isArray(pen)?pen[0]:pen);
   showToast('-5 XP ✕ Skipped · '+(MAX_SKIPS-todaySkips)+' left');renderAll();
 }
@@ -883,7 +895,7 @@ async function selectRoll(idx){
   if(sel===String(idx)){
     const t=dailyRoll[idx];const bxp=Math.round((t.xp||25)*1.5);
     localStorage.setItem('grind_roll_done_'+sessionKey,'1');setSS(false,'saving...');
-    const r=await dbIns('grind_completions',{task_id:-998,date:today,xp:bxp});
+    const r=await dbIns('grind_completions',{task_id:-998,date:new Date().toISOString().slice(0,10),xp:bxp});
     if(r){completions.push(Array.isArray(r)?r[0]:r);setSS(true,'saved');showToast('+'+bxp+' XP bonus! \uD83C\uDFAF',2000);checkLevelUp();}
     else setSS(false,'error');
     renderAll();
@@ -909,7 +921,7 @@ async function completeBonusQuest(){
   if(localStorage.getItem('grind_bonus_'+sessionKey)==='1'){showToast('Already done!');return;}
   const _bseed=parseInt(sessionKey.replace(/[^0-9]/g,'').slice(-4)||'1');const seed=Math.abs(_bseed)%Math.max(BONUS_QUESTS.length,1);
   const q=BONUS_QUESTS[seed];localStorage.setItem('grind_bonus_'+sessionKey,'1');setSS(false,'saving...');
-  const r=await dbIns('grind_completions',{task_id:-997,date:today,xp:q.xp});
+  const r=await dbIns('grind_completions',{task_id:-997,date:new Date().toISOString().slice(0,10),xp:q.xp});
   if(r){completions.push(Array.isArray(r)?r[0]:r);setSS(true,'saved');checkNewAchievements();showToast('+'+q.xp+' XP \uD83C\uDFAF',2000);checkLevelUp();}
   else setSS(false,'error');renderAll();
 }
@@ -1159,7 +1171,7 @@ function checkNewAchievements(){
     const key='grind_ach_'+a.name;
     if(!localStorage.getItem(key)&&a.check()){
       localStorage.setItem(key,'1'); // mark immediately before async call
-      dbIns('grind_completions',{task_id:-995,date:today,xp:a.xp}).then(r=>{
+      dbIns('grind_completions',{task_id:-995,date:new Date().toISOString().slice(0,10),xp:a.xp}).then(r=>{
         if(r){
           completions.push(Array.isArray(r)?r[0]:r);
           showToast(a.icon+' '+a.name+' +'+a.xp+' XP',2500);
