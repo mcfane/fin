@@ -274,8 +274,18 @@ select.field option{background:var(--s2)}
 }
 
 /* PIN LOCK */
-#pin-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;}
-#pin-screen.gone{display:none}
+#auth-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
+#auth-screen.gone{display:none}
+.auth-box{display:flex;flex-direction:column;align-items:center;gap:14px;width:280px}
+.auth-logo{font-size:28px;font-weight:900;letter-spacing:.2em;color:var(--t1);margin-bottom:4px}
+.auth-subtitle{font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
+.auth-field{width:100%;padding:11px 14px;background:var(--s2);border:1px solid var(--line2);border-radius:var(--rs);color:var(--t1);font-family:'Outfit',sans-serif;font-size:14px;outline:none;transition:border-color .15s}
+.auth-field:focus{border-color:var(--g1)}
+.auth-field::placeholder{color:var(--t3)}
+.auth-btn{width:100%;padding:12px;border:none;border-radius:var(--rs);background:var(--t1);color:var(--bg);font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;transition:opacity .15s;margin-top:2px}
+.auth-btn:hover{opacity:.85}
+.auth-btn:disabled{opacity:.4;cursor:default}
+.auth-error{width:100%;padding:10px 14px;background:var(--dn2);border:1px solid rgba(240,61,95,.3);border-radius:var(--rs);font-size:12px;color:var(--dn);text-align:center}
 .pin-box{display:flex;flex-direction:column;align-items:center;gap:20px;width:260px}
 .pin-title{font-size:13px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.16em}
 .pin-dots{display:flex;gap:12px}
@@ -307,32 +317,16 @@ select.field option{background:var(--s2)}
   <a href="index.html" class="sw-btn active">💰 Finance</a>
   <a href="tasks.html" class="sw-btn">⚡ Grind</a>
 </div>
-<div id="pin-screen">
-  <div class="pin-box">
-    <div class="pin-title">Enter PIN</div>
-    <div class="pin-dots">
-      <div class="pin-dot" id="pd0"></div>
-      <div class="pin-dot" id="pd1"></div>
-      <div class="pin-dot" id="pd2"></div>
-      <div class="pin-dot" id="pd3"></div>
-    </div>
-    <div class="pin-pad">
-      <button class="pin-key" onclick="pinKey('1')">1</button>
-      <button class="pin-key" onclick="pinKey('2')">2</button>
-      <button class="pin-key" onclick="pinKey('3')">3</button>
-      <button class="pin-key" onclick="pinKey('4')">4</button>
-      <button class="pin-key" onclick="pinKey('5')">5</button>
-      <button class="pin-key" onclick="pinKey('6')">6</button>
-      <button class="pin-key" onclick="pinKey('7')">7</button>
-      <button class="pin-key" onclick="pinKey('8')">8</button>
-      <button class="pin-key" onclick="pinKey('9')">9</button>
-      <button class="pin-key del" onclick="pinKey('del')">⌫</button>
-      <button class="pin-key" onclick="pinKey('0')">0</button>
-      <button class="pin-key del" onclick="pinKey('clr')">✕</button>
-    </div>
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">FIN</div>
+    <div class="auth-subtitle">Personal Finance & Grind Tracker</div>
+    <div id="auth-error" class="auth-error" style="display:none"></div>
+    <input class="auth-field" type="email" id="auth-email" placeholder="Email" autocomplete="email">
+    <input class="auth-field" type="password" id="auth-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="auth-btn" onclick="doLogin()" id="auth-submit">Sign In</button>
   </div>
 </div>
-
 <div class="app">
 
   <!-- LEFT: FORM + SETTINGS -->
@@ -650,7 +644,8 @@ select.field option{background:var(--s2)}
 <script>
 const SB='https://ftxgcggckwwjkxnlmfxs.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eGdjZ2dja3d3amt4bmxtZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzODcyNjAsImV4cCI6MjA5Mzk2MzI2MH0.6f3ygks9oIQp1vM43qt3Z7qf0T2Ouo74kLwjw2MZkO8';
-const H={'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+function getH(){return getAuthHeader();}
+const H={'apikey':KEY,'Authorization':'Bearer '+(localStorage.getItem('sb_token')||KEY),'Content-Type':'application/json','Prefer':'return=representation'};
 const dbGet=(t,o='created_at')=>fetch(`${SB}/rest/v1/${t}?order=${o}.desc`,{headers:H}).then(r=>r.ok?r.json():[]).catch(()=>[]);
 const dbIns=(t,d)=>fetch(`${SB}/rest/v1/${t}`,{method:'POST',headers:H,body:JSON.stringify(d)}).then(r=>{if(!r.ok){return r.text().then(txt=>{console.error('dbIns error',t,r.status,txt);return null;});}return r.json();}).catch(e=>{console.error('dbIns fetch error',t,e);return null;});
 const dbDel=(t,id)=>fetch(`${SB}/rest/v1/${t}?id=eq.${id}`,{method:'DELETE',headers:H}).catch(()=>{});
@@ -1076,35 +1071,91 @@ async function init(){
   }catch(e){setSyncStatus(false,'error');document.getElementById('loading-tx').innerHTML='<div style="color:#f03d5f;text-align:center;padding:20px">Connection error</div>';}
 }
 
-const PIN_HASH='aa82088246685c17ebf16d48877686b831ed384ffdc42e76494283c271704d7a';
-let pinBuf='';
-async function sha256(s){const b=new TextEncoder().encode(s);const h=await crypto.subtle.digest('SHA-256',b);return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('');}
-function pinKey(k){
-  if(k==='del'){pinBuf=pinBuf.slice(0,-1);}
-  else if(k==='clr'){pinBuf='';}
-  else if(pinBuf.length<4){pinBuf+=k;}
-  updatePinDots();
-  if(pinBuf.length===4){
-    sha256(pinBuf).then(h=>{
-      if(h===PIN_HASH){
-        localStorage.setItem('fin_auth','1');
-        document.getElementById('pin-screen').classList.add('gone');
-        init();
-      }else{
-        document.querySelectorAll('.pin-dot').forEach(d=>d.classList.add('error'));
-        setTimeout(()=>{pinBuf='';updatePinDots();document.querySelectorAll('.pin-dot').forEach(d=>d.classList.remove('error'));},600);
-      }
+const SB_AUTH='https://ftxgcggckwwjkxnlmfxs.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eGdjZ2dja3d3amt4bmxtZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzODcyNjAsImV4cCI6MjA5Mzk2MzI2MH0.6f3ygks9oIQp1vM43qt3Z7qf0T2Ouo74kLwjw2MZkO8';
+
+async function doLogin(){
+  const email=document.getElementById('auth-email').value.trim();
+  const pass=document.getElementById('auth-pass').value;
+  const btn=document.getElementById('auth-submit');
+  const err=document.getElementById('auth-error');
+  if(!email||!pass){showAuthError('Enter email and password');return;}
+  btn.disabled=true;btn.textContent='Signing in...';err.style.display='none';
+  try{
+    const r=await fetch(SB_AUTH+'/auth/v1/token?grant_type=password',{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({email,password:pass})
     });
+    const d=await r.json();
+    if(d.access_token){
+      localStorage.setItem('sb_token',d.access_token);
+      localStorage.setItem('sb_refresh',d.refresh_token||localStorage.getItem('sb_refresh'));
+      localStorage.setItem('sb_expires',Date.now()+(d.expires_in||3600)*1000);
+      document.getElementById('auth-screen').classList.add('gone');
+      init();
+    }else{
+      showAuthError(d.error_description||d.message||'Invalid credentials');
+      btn.disabled=false;btn.textContent='Sign In';
+    }
+  }catch(e){
+    showAuthError('Connection error');
+    btn.disabled=false;btn.textContent='Sign In';
   }
 }
-function updatePinDots(){for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.toggle('filled',i<pinBuf.length);}
-function checkAuth(){
-  if(localStorage.getItem('fin_auth')==='1'){
-    document.getElementById('pin-screen').classList.add('gone');
-    init();
-  }
+
+function showAuthError(msg){
+  const err=document.getElementById('auth-error');
+  err.textContent=msg;err.style.display='block';
 }
+
+async function refreshToken(){
+  const refresh=localStorage.getItem('sb_refresh');
+  if(!refresh)return false;
+  try{
+    const r=await fetch(SB_AUTH+'/auth/v1/token?grant_type=refresh_token',{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({refresh_token:refresh})
+    });
+    const d=await r.json();
+    if(d.access_token){
+      localStorage.setItem('sb_token',d.access_token);
+      localStorage.setItem('sb_refresh',d.refresh_token||localStorage.getItem('sb_refresh'));
+      localStorage.setItem('sb_expires',Date.now()+(d.expires_in||3600)*1000);
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+async function checkAuth(){
+  const token=localStorage.getItem('sb_token');
+  const expires=parseInt(localStorage.getItem('sb_expires')||'0');
+  // Still valid
+  if(token&&Date.now()<expires-60000){
+    document.getElementById('auth-screen').classList.add('gone');
+    init();return;
+  }
+  // Try refresh - refresh token lasts 60 days
+  if(localStorage.getItem('sb_refresh')&&await refreshToken()){
+    document.getElementById('auth-screen').classList.add('gone');
+    init();return;
+  }
+  // No session - show login
+  localStorage.removeItem('sb_token');
+}
+
+function getAuthHeader(){
+  const token=localStorage.getItem('sb_token');
+  return token?{'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=representation'}:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+}
+
 window.addEventListener('DOMContentLoaded',checkAuth);
+// Auto-refresh every 50 min to stay logged in forever
+setInterval(async()=>{
+  if(localStorage.getItem('sb_refresh'))await refreshToken();
+},50*60*1000);
 
 </script>
 </body>

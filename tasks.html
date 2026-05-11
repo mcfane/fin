@@ -22,8 +22,18 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased}
-#pin-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
-#pin-screen.gone{display:none}
+#auth-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
+#auth-screen.gone{display:none}
+.auth-box{display:flex;flex-direction:column;align-items:center;gap:14px;width:280px}
+.auth-logo{font-size:28px;font-weight:900;letter-spacing:.2em;color:var(--t1);margin-bottom:4px}
+.auth-subtitle{font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
+.auth-field{width:100%;padding:11px 14px;background:var(--s2);border:1px solid var(--line2);border-radius:var(--rs);color:var(--t1);font-family:'Outfit',sans-serif;font-size:14px;outline:none;transition:border-color .15s}
+.auth-field:focus{border-color:var(--g1)}
+.auth-field::placeholder{color:var(--t3)}
+.auth-btn{width:100%;padding:12px;border:none;border-radius:var(--rs);background:var(--t1);color:var(--bg);font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;transition:opacity .15s;margin-top:2px}
+.auth-btn:hover{opacity:.85}
+.auth-btn:disabled{opacity:.4;cursor:default}
+.auth-error{width:100%;padding:10px 14px;background:var(--dn2);border:1px solid rgba(240,61,95,.3);border-radius:var(--rs);font-size:12px;color:var(--dn);text-align:center}
 .pin-box{display:flex;flex-direction:column;align-items:center;gap:22px;width:230px}
 .pin-logo{font-size:26px;font-weight:900;letter-spacing:.15em;color:var(--g1)}
 .pin-dots{display:flex;gap:13px}
@@ -210,16 +220,14 @@ select.field option{background:var(--s2)}
 </style>
 </head>
 <body>
-<div id="pin-screen">
-  <div class="pin-box">
-    <div class="pin-logo">GRIND</div>
-    <div class="pin-dots"><div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div><div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div></div>
-    <div class="pin-pad">
-      <button class="pin-key" onclick="pinKey('1')">1</button><button class="pin-key" onclick="pinKey('2')">2</button><button class="pin-key" onclick="pinKey('3')">3</button>
-      <button class="pin-key" onclick="pinKey('4')">4</button><button class="pin-key" onclick="pinKey('5')">5</button><button class="pin-key" onclick="pinKey('6')">6</button>
-      <button class="pin-key" onclick="pinKey('7')">7</button><button class="pin-key" onclick="pinKey('8')">8</button><button class="pin-key" onclick="pinKey('9')">9</button>
-      <button class="pin-key del" onclick="pinKey('del')">&#x232B;</button><button class="pin-key" onclick="pinKey('0')">0</button><button class="pin-key del" onclick="pinKey('clr')">&#x2715;</button>
-    </div>
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">FIN</div>
+    <div class="auth-subtitle">Personal Finance & Grind Tracker</div>
+    <div id="auth-error" class="auth-error" style="display:none"></div>
+    <input class="auth-field" type="email" id="auth-email" placeholder="Email" autocomplete="email">
+    <input class="auth-field" type="password" id="auth-pass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="auth-btn" onclick="doLogin()" id="auth-submit">Sign In</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -435,122 +443,91 @@ select.field option{background:var(--s2)}
 </div>
 
 <script>
-const PIN_HASH='aa82088246685c17ebf16d48877686b831ed384ffdc42e76494283c271704d7a';
-const GEMINI_KEY='AIzaSyC0NVD4hjX0TJ67-C7hZXqeKJSisRq95Dc';
-const SB='https://ftxgcggckwwjkxnlmfxs.supabase.co';
-const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eGdjZ2dja3d3amt4bmxtZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzODcyNjAsImV4cCI6MjA5Mzk2MzI2MH0.6f3ygks9oIQp1vM43qt3Z7qf0T2Ouo74kLwjw2MZkO8';
-const H={'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'return=representation'};
-const today=new Date().toISOString().slice(0,10);
+const SB_AUTH='https://ftxgcggckwwjkxnlmfxs.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eGdjZ2dja3d3amt4bmxtZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzODcyNjAsImV4cCI6MjA5Mzk2MzI2MH0.6f3ygks9oIQp1vM43qt3Z7qf0T2Ouo74kLwjw2MZkO8';
 
-const LEVELS=[
-  {min:0,    name:'Novice',     title:'Just Starting',        icon:'💀', color:'#525260'},
-  {min:250,  name:'Initiate',   title:'First Steps',          icon:'🌱', color:'#1ad472'},
-  {min:500,  name:'Apprentice', title:'Building Habits',      icon:'⚡',     color:'#1ad472'},
-  {min:750,  name:'Seeker',     title:'Finding Rhythm',       icon:'🔍', color:'#3b82f6'},
-  {min:1100, name:'Grinder',    title:'Getting Consistent',   icon:'💪', color:'#3b82f6'},
-  {min:1500, name:'Hustler',    title:'Locked In',            icon:'🔥', color:'#f59e0b'},
-  {min:2000, name:'Fighter',    title:'Pushing Limits',       icon:'🥊', color:'#f59e0b'},
-  {min:2700, name:'Warrior',    title:'Discipline Mode',      icon:'⚔️', color:'#f03d5f'},
-  {min:3500, name:'Soldier',    title:'No Excuses',           icon:'🛡️', color:'#f03d5f'},
-  {min:4500, name:'Knight',     title:'Honor & Grind',        icon:'⚔️',  color:'#a855f7'},
-  {min:6000, name:'Elite',      title:'Above Average',        icon:'🎯', color:'#a855f7'},
-  {min:8000, name:'Champion',   title:'Top Tier',             icon:'🏆', color:'#a855f7'},
-  {min:10500,name:'Master',     title:'Mastery Unlocked',     icon:'🧠', color:'#00e5a0'},
-  {min:13500,name:'Virtuoso',   title:'Natural Discipline',   icon:'✨',     color:'#00e5a0'},
-  {min:17000,name:'Legend',     title:'People Talk About You',icon:'👑', color:'#f59e0b'},
-  {min:21000,name:'Mythic',     title:'Beyond Normal',        icon:'🌀', color:'#f59e0b'},
-  {min:26000,name:'Phantom',    title:'Ghost Mode',           icon:'👻', color:'#a855f7'},
-  {min:32000,name:'Titan',      title:'Unstoppable Force',    icon:'🧊', color:'#3b82f6'},
-  {min:40000,name:'Ascendant',  title:'Transcending Limits',  icon:'🌠', color:'#f03d5f'},
-  {min:50000,name:'Eternal',    title:'No Days Off Ever',     icon:'🌟', color:'#f59e0b'},
-];
-
-const BUILT_IN=[
-  {name:'5 min stretch',xp:10,time_slot:'morning',min_level:1,difficulty:'easy',has_timer:true},
-  {name:'Drink a glass of water',xp:10,time_slot:'morning',min_level:1,difficulty:'easy',has_timer:false},
-  {name:'Make your bed',xp:10,time_slot:'morning',min_level:1,difficulty:'easy',has_timer:false},
-  {name:'No phone first 30 min',xp:25,time_slot:'morning',min_level:1,difficulty:'medium',has_timer:false},
-  {name:'10 pushups',xp:10,time_slot:'morning',min_level:1,difficulty:'easy',has_timer:false},
-  {name:'Eat breakfast',xp:10,time_slot:'morning',min_level:1,difficulty:'easy',has_timer:false},
-  {name:'Short walk outside',xp:10,time_slot:'morning',min_level:1,difficulty:'easy',has_timer:true},
-  {name:'20 min workout',xp:50,time_slot:'morning',min_level:2,difficulty:'hard',has_timer:true},
-  {name:'Cold shower',xp:25,time_slot:'morning',min_level:2,difficulty:'medium',has_timer:false},
-  {name:'Journal 5 min',xp:25,time_slot:'morning',min_level:2,difficulty:'medium',has_timer:true},
-  {name:'Read 15 min',xp:25,time_slot:'morning',min_level:2,difficulty:'medium',has_timer:true},
-  {name:'Meditate 10 min',xp:25,time_slot:'morning',min_level:3,difficulty:'medium',has_timer:true},
-  {name:'Run 2km',xp:50,time_slot:'morning',min_level:3,difficulty:'hard',has_timer:false},
-  {name:'Plan the day',xp:25,time_slot:'morning',min_level:3,difficulty:'medium',has_timer:false},
-  {name:'Drink 2L of water',xp:10,time_slot:'day',min_level:1,difficulty:'easy',has_timer:false},
-  {name:'Take 10 min walk',xp:10,time_slot:'day',min_level:1,difficulty:'easy',has_timer:false},
-  {name:'Eat something healthy',xp:10,time_slot:'day',min_level:1,difficulty:'easy',has_timer:false},
-  {name:'Stand up every hour',xp:10,time_slot:'day',min_level:1,difficulty:'easy',has_timer:false},
-  {name:'No junk food today',xp:25,time_slot:'day',min_level:2,difficulty:'medium',has_timer:false},
-  {name:'30 min work on a goal',xp:50,time_slot:'day',min_level:2,difficulty:'hard',has_timer:true},
-  {name:'No social media until 2pm',xp:25,time_slot:'day',min_level:2,difficulty:'medium',has_timer:false},
-  {name:'Learn something new 20 min',xp:25,time_slot:'day',min_level:2,difficulty:'medium',has_timer:true},
-  {name:'Deep work 1 hour',xp:50,time_slot:'day',min_level:3,difficulty:'hard',has_timer:false},
-  {name:'No phone during lunch',xp:25,time_slot:'day',min_level:3,difficulty:'medium',has_timer:false},
-  {name:'Reach out to someone',xp:25,time_slot:'day',min_level:3,difficulty:'medium',has_timer:false},
-  {name:'2 hours deep work',xp:50,time_slot:'day',min_level:4,difficulty:'hard',has_timer:false},
-  {name:'Intermittent fasting 16h',xp:50,time_slot:'day',min_level:4,difficulty:'hard',has_timer:false},
-  {name:'Sleep before midnight',xp:10,time_slot:'evening',min_level:1,difficulty:'easy',has_timer:false},
-  {name:'Put phone away by 10pm',xp:10,time_slot:'evening',min_level:1,difficulty:'easy',has_timer:false},
-  {name:'Tidy your space',xp:10,time_slot:'evening',min_level:1,difficulty:'easy',has_timer:false},
-  {name:'Plan tomorrow',xp:10,time_slot:'evening',min_level:1,difficulty:'easy',has_timer:false},
-  {name:'Read 20 min before bed',xp:25,time_slot:'evening',min_level:2,difficulty:'medium',has_timer:true},
-  {name:'No screens 1h before sleep',xp:25,time_slot:'evening',min_level:2,difficulty:'medium',has_timer:false},
-  {name:'Reflect on the day 5 min',xp:25,time_slot:'evening',min_level:2,difficulty:'medium',has_timer:true},
-  {name:'Gratitude - 3 things',xp:25,time_slot:'evening',min_level:3,difficulty:'medium',has_timer:false},
-  {name:'Review goals progress',xp:25,time_slot:'evening',min_level:3,difficulty:'medium',has_timer:false},
-  {name:'Stretch 10 min',xp:10,time_slot:'evening',min_level:3,difficulty:'easy',has_timer:true},
-];
-
-const BONUS_QUESTS=[
-  {name:'100 Squats',desc:'Do 100 squats throughout the day, split however you want.',xp:150},
-  {name:'No Social Media Before Lunch',desc:'Zero social media or news apps until after 12pm.',xp:100},
-  {name:'Drink 3L of Water',desc:'Stay hydrated all day - 3 full liters.',xp:80},
-  {name:'No Sugar Today',desc:'Zero added sugar for the entire day.',xp:120},
-  {name:'Reconnect',desc:'Call or text someone you have been putting off.',xp:80},
-  {name:'10,000 Steps',desc:'Hit 10k steps before midnight.',xp:100},
-  {name:'Cook a Real Meal',desc:'No delivery. Cook something from scratch.',xp:100},
-  {name:'1 Hour on Your Biggest Goal',desc:'Deep focus, one full hour, no distractions.',xp:150},
-  {name:'Early Sleep',desc:'In bed by 10pm. No exceptions.',xp:80},
-  {name:'Ice Cold Shower',desc:'Cold all the way through. 3+ minutes.',xp:120},
-  {name:'Read 30 Pages',desc:'Crack open a book and read 30 pages straight.',xp:80},
-  {name:'No Coffee Today',desc:'Face the day without caffeine. You got this.',xp:60},
-  {name:'Declutter 10 Items',desc:'Throw away or donate 10 things from your space.',xp:80},
-  {name:'20 Min Outdoor Walk',desc:'Fresh air, no podcast, just walk and think.',xp:60},
-];
-
-const RANDOM_EVENTS=[
-  {text:'DOUBLE XP - next task you complete gives double points!',special:'double_xp',xp:0},
-  {text:'Quick challenge: do 30 jumping jacks RIGHT NOW for +40 XP',special:'instant',xp:40},
-  {text:'Take 3 slow deep breaths right now. Done? +20 XP',special:'instant',xp:20},
-  {text:'Drink a full glass of water immediately. +15 XP',special:'instant',xp:15},
-  {text:'Stand up and walk around for 5 minutes. +25 XP',special:'instant',xp:25},
-  {text:'Write one sentence about what you want this week. +30 XP',special:'instant',xp:30},
-  {text:'BONUS: Complete all tasks today for +100 XP extra bonus',special:'honor',xp:100},
-];
-
-let tasks=[],completions=[],lazyMode=false,timerIntervals={};
-let dailyRoll=null,todaySkips=0,doubleXP=false;
-const MAX_SKIPS=3;
-
-// PIN
-let pinBuf='';
-async function sha256(s){const b=new TextEncoder().encode(s);const h=await crypto.subtle.digest('SHA-256',b);return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('');}
-function pinKey(k){
-  if(k==='del')pinBuf=pinBuf.slice(0,-1);
-  else if(k==='clr')pinBuf='';
-  else if(pinBuf.length<4)pinBuf+=k;
-  for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.toggle('filled',i<pinBuf.length);
-  if(pinBuf.length===4){sha256(pinBuf).then(h=>{
-    if(h===PIN_HASH){localStorage.setItem('fin_auth','1');document.getElementById('pin-screen').classList.add('gone');init();}
-    else{document.querySelectorAll('.pin-dot').forEach(d=>d.classList.add('error'));setTimeout(()=>{pinBuf='';document.querySelectorAll('.pin-dot').forEach(d=>d.classList.remove('error','filled'));},600);}
-  });}
+async function doLogin(){
+  const email=document.getElementById('auth-email').value.trim();
+  const pass=document.getElementById('auth-pass').value;
+  const btn=document.getElementById('auth-submit');
+  const err=document.getElementById('auth-error');
+  if(!email||!pass){showAuthError('Enter email and password');return;}
+  btn.disabled=true;btn.textContent='Signing in...';err.style.display='none';
+  try{
+    const r=await fetch(SB_AUTH+'/auth/v1/token?grant_type=password',{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({email,password:pass})
+    });
+    const d=await r.json();
+    if(d.access_token){
+      localStorage.setItem('sb_token',d.access_token);
+      localStorage.setItem('sb_refresh',d.refresh_token||localStorage.getItem('sb_refresh'));
+      localStorage.setItem('sb_expires',Date.now()+(d.expires_in||3600)*1000);
+      document.getElementById('auth-screen').classList.add('gone');
+      init();
+    }else{
+      showAuthError(d.error_description||d.message||'Invalid credentials');
+      btn.disabled=false;btn.textContent='Sign In';
+    }
+  }catch(e){
+    showAuthError('Connection error');
+    btn.disabled=false;btn.textContent='Sign In';
+  }
 }
-function checkAuth(){if(localStorage.getItem('fin_auth')==='1'){document.getElementById('pin-screen').classList.add('gone');init();}}
+
+function showAuthError(msg){
+  const err=document.getElementById('auth-error');
+  err.textContent=msg;err.style.display='block';
+}
+
+async function refreshToken(){
+  const refresh=localStorage.getItem('sb_refresh');
+  if(!refresh)return false;
+  try{
+    const r=await fetch(SB_AUTH+'/auth/v1/token?grant_type=refresh_token',{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({refresh_token:refresh})
+    });
+    const d=await r.json();
+    if(d.access_token){
+      localStorage.setItem('sb_token',d.access_token);
+      localStorage.setItem('sb_refresh',d.refresh_token||localStorage.getItem('sb_refresh'));
+      localStorage.setItem('sb_expires',Date.now()+(d.expires_in||3600)*1000);
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+async function checkAuth(){
+  const token=localStorage.getItem('sb_token');
+  const expires=parseInt(localStorage.getItem('sb_expires')||'0');
+  // Still valid
+  if(token&&Date.now()<expires-60000){
+    document.getElementById('auth-screen').classList.add('gone');
+    init();return;
+  }
+  // Try refresh - refresh token lasts 60 days
+  if(localStorage.getItem('sb_refresh')&&await refreshToken()){
+    document.getElementById('auth-screen').classList.add('gone');
+    init();return;
+  }
+  // No session - show login
+  localStorage.removeItem('sb_token');
+}
+
+function getAuthHeader(){
+  const token=localStorage.getItem('sb_token');
+  return token?{'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':'return=representation'}:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+}
+
 window.addEventListener('DOMContentLoaded',checkAuth);
+// Auto-refresh every 50 min to stay logged in forever
+setInterval(async()=>{
+  if(localStorage.getItem('sb_refresh'))await refreshToken();
+},50*60*1000);
 
 // DB
 const dbGet=(t,q='')=>fetch(SB+'/rest/v1/'+t+'?'+q,{headers:H}).then(r=>r.ok?r.json():null).catch(()=>null);
