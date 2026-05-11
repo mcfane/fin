@@ -293,7 +293,6 @@ select.field option{background:var(--s2)}
     <div style="margin-left:auto;display:flex;gap:7px">
       <button class="lazy-btn" id="lazy-btn" onclick="toggleLazyMode()">&#x1F634; Lazy</button>
       <button class="lazy-btn" onclick="rerollDay()">&#x1F3B2; Reroll</button>
-      <button class="lazy-btn" onclick="endDay()" style="color:var(--up);border-color:rgba(26,212,114,.3)">&#x2705; End Day</button>
     </div>
   </div>
   <div class="col-inner">
@@ -350,34 +349,22 @@ select.field option{background:var(--s2)}
     </div>
     <div id="block-morning">
       <div class="block-hdr">
-        <div style="display:flex;align-items:center;gap:6px">
-          <div class="block-dot" style="background:#f59e0b"></div>
-          <span class="block-title">&#x1F4BB; Before the computer</span>
-          <span style="font-size:9px;color:var(--t3);font-weight:600">do these first</span>
-        </div>
-        <button class="ca-btn" onclick="completeBlock('morning')">Done all</button>
+        <div style="display:flex;align-items:center"><div class="block-dot" style="background:#f59e0b"></div><span class="block-title">&#x1F305; Morning</span></div>
+        <button class="ca-btn" onclick="completeBlock('morning')">Complete all</button>
       </div>
       <div id="tasks-morning" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
     <div id="block-day">
       <div class="block-hdr">
-        <div style="display:flex;align-items:center;gap:6px">
-          <div class="block-dot" style="background:#3b82f6"></div>
-          <span class="block-title">&#x23F8;&#xFE0F; Break the loop</span>
-          <span style="font-size:9px;color:var(--t3);font-weight:600">interrupt the session</span>
-        </div>
-        <button class="ca-btn" onclick="completeBlock('day')">Done all</button>
+        <div style="display:flex;align-items:center"><div class="block-dot" style="background:#3b82f6"></div><span class="block-title">&#x2600;&#xFE0F; Day</span></div>
+        <button class="ca-btn" onclick="completeBlock('day')">Complete all</button>
       </div>
       <div id="tasks-day" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
     <div id="block-evening">
       <div class="block-hdr">
-        <div style="display:flex;align-items:center;gap:6px">
-          <div class="block-dot" style="background:#a855f7"></div>
-          <span class="block-title">&#x1F319; Before sleep</span>
-          <span style="font-size:9px;color:var(--t3);font-weight:600">end differently</span>
-        </div>
-        <button class="ca-btn" onclick="completeBlock('evening')">Done all</button>
+        <div style="display:flex;align-items:center"><div class="block-dot" style="background:#a855f7"></div><span class="block-title">&#x1F319; Evening</span></div>
+        <button class="ca-btn" onclick="completeBlock('evening')">Complete all</button>
       </div>
       <div id="tasks-evening" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
@@ -558,94 +545,104 @@ setInterval(async()=>{
 },50*60*1000);
 
 const GEMINI_KEY='AIzaSyC0NVD4hjX0TJ67-C7hZXqeKJSisRq95Dc';
-// Use session-based day instead of calendar date
-// so user controls when day ends
-function getSessionDay(){
-  // Day is defined by user pressing End Day, not by calendar
-  // First ever session uses today's date as starting key
-  if(!localStorage.getItem('grind_session_override')){
-    const firstDay=new Date().toISOString().slice(0,10);
-    localStorage.setItem('grind_session_override', firstDay);
+const today=new Date().toISOString().slice(0,10);
+// sessionKey: unique per session, controlled by End Day button
+// Stored in localStorage, defaults to today's date
+(function(){
+  if(!localStorage.getItem('grind_session_key')){
+    localStorage.setItem('grind_session_key',today);
   }
-  return localStorage.getItem('grind_session_override');
-}
-const today=getSessionDay();
+})();
+const sessionKey=localStorage.getItem('grind_session_key');
 const MAX_SKIPS=3;
 
 const LEVELS=[
-  {min:0,    name:'Couch Mode',   title:'Day 1. Just starting.',         icon:'🛋️'},
-  {min:250,  name:'Awakening',    title:'Something is shifting.',         icon:'🌱'},
-  {min:500,  name:'Moving',       title:'Body remembers it can move.',    icon:'🚶'},
-  {min:750,  name:'Consistent',   title:'3 days in a row. Real.',         icon:'⚡'},
-  {min:1100, name:'Disciplined',  title:'You show up even when lazy.',    icon:'💪'},
-  {min:1500, name:'Grinder',      title:'Locked in.',                     icon:'🔥'},
-  {min:2000, name:'Fighter',      title:'You vs old you. Winning.',icon:'🥊'},
-  {min:2700, name:'Warrior',      title:'Discipline is a habit now.',     icon:'⚔️'},
-  {min:3500, name:'Unstoppable',  title:'No excuses left.',               icon:'🎯'},
-  {min:4500, name:'Machine',      title:'People notice the change.',      icon:'⚙️'},
-  {min:6000, name:'Elite',        title:'Top 1% of your old self.',       icon:'🏆'},
-  {min:8000, name:'Champion',     title:'Gym time.',                      icon:'🥇'},
-  {min:10500,name:'Legend',       title:'You became who you wanted.',     icon:'👑'},
+  {min:0,name:'Novice',title:'Just Starting',icon:'💀'},
+  {min:250,name:'Initiate',title:'First Steps',icon:'🌱'},
+  {min:500,name:'Apprentice',title:'Building Habits',icon:'⚡'},
+  {min:750,name:'Seeker',title:'Finding Rhythm',icon:'🔍'},
+  {min:1100,name:'Grinder',title:'Getting Consistent',icon:'💪'},
+  {min:1500,name:'Hustler',title:'Locked In',icon:'🔥'},
+  {min:2000,name:'Fighter',title:'Pushing Limits',icon:'🥊'},
+  {min:2700,name:'Warrior',title:'Discipline Mode',icon:'⚔️'},
+  {min:3500,name:'Soldier',title:'No Excuses',icon:'🛡️'},
+  {min:4500,name:'Knight',title:'Honor and Grind',icon:'🎯'},
+  {min:6000,name:'Elite',title:'Above Average',icon:'🏆'},
+  {min:8000,name:'Champion',title:'Top Tier',icon:'🥇'},
+  {min:10500,name:'Master',title:'Mastery Unlocked',icon:'🧠'},
+  {min:13500,name:'Virtuoso',title:'Natural Discipline',icon:'✨'},
+  {min:17000,name:'Legend',title:'People Talk About You',icon:'👑'},
+  {min:21000,name:'Mythic',title:'Beyond Normal',icon:'🌀'},
+  {min:26000,name:'Phantom',title:'Ghost Mode',icon:'👻'},
+  {min:32000,name:'Titan',title:'Unstoppable Force',icon:'🧊'},
+  {min:40000,name:'Ascendant',title:'Transcending Limits',icon:'🌠'},
+  {min:50000,name:'Eternal',title:'No Days Off Ever',icon:'🌟'},
 ];
 
 const BUILT_IN=[
-  // BODY
-  {name:'10 pushups right now',          xp:20,cat:'body',difficulty:'easy',  has_timer:false,id:-201,min_level:1},
-  {name:'20 squats right now',           xp:20,cat:'body',difficulty:'easy',  has_timer:false,id:-202,min_level:1},
-  {name:'Open window fresh air 10 min',  xp:15,cat:'body',difficulty:'easy',  has_timer:true, id:-203,min_level:1},
-  {name:'Stretch neck & back 5 min',     xp:15,cat:'body',difficulty:'easy',  has_timer:true, id:-204,min_level:1},
-  {name:'Walk outside 10 min',           xp:35,cat:'body',difficulty:'medium',has_timer:false,id:-205,min_level:1},
-  {name:'20 min workout on the mat',     xp:50,cat:'body',difficulty:'hard',  has_timer:true, id:-206,min_level:2},
-  {name:'Cold shower',                   xp:40,cat:'body',difficulty:'hard',  has_timer:false,id:-207,min_level:2},
-  {name:'30 min walk outside',           xp:40,cat:'body',difficulty:'medium',has_timer:false,id:-208,min_level:2},
+  // BODY - lvl 1: basic movement
+  {name:'10 pushups',                    xp:20,cat:'body',difficulty:'easy',  has_timer:false,id:-201,min_level:1},
+  {name:'20 squats',                     xp:20,cat:'body',difficulty:'easy',  has_timer:false,id:-202,min_level:1},
+  {name:'Walk around the apartment 5min',xp:15,cat:'body',difficulty:'easy',  has_timer:true, id:-203,min_level:1},
+  {name:'Stretch your neck and back',    xp:15,cat:'body',difficulty:'easy',  has_timer:true, id:-204,min_level:1},
+  // BODY - lvl 2: getting serious
+  {name:'20 min workout on the mat',     xp:50,cat:'body',difficulty:'medium',has_timer:true, id:-205,min_level:2},
+  {name:'30 pushups',                    xp:30,cat:'body',difficulty:'medium',has_timer:false,id:-206,min_level:2},
+  {name:'Go outside for 15 min walk',   xp:35,cat:'body',difficulty:'medium',has_timer:false,id:-207,min_level:2},
+  {name:'Cold shower',                   xp:40,cat:'body',difficulty:'hard',  has_timer:false,id:-208,min_level:2},
+  // BODY - lvl 3: real training
   {name:'30 min full workout',           xp:60,cat:'body',difficulty:'hard',  has_timer:true, id:-209,min_level:3},
-  // MIND
-  {name:'No phone first 30 min',         xp:25,cat:'mind',difficulty:'medium',has_timer:true, id:-210,min_level:1},
-  {name:'Write what you want today',     xp:15,cat:'mind',difficulty:'easy',  has_timer:false,id:-211,min_level:1},
-  {name:'1 hour work no games',          xp:50,cat:'mind',difficulty:'hard',  has_timer:false,id:-212,min_level:1},
-  {name:'No social media until 2pm',     xp:30,cat:'mind',difficulty:'medium',has_timer:false,id:-213,min_level:2},
-  {name:'Read 20 min',                   xp:25,cat:'mind',difficulty:'easy',  has_timer:true, id:-214,min_level:2},
-  {name:'2 hours work session',          xp:70,cat:'mind',difficulty:'hard',  has_timer:false,id:-215,min_level:3},
-  {name:'Find one freelance lead',       xp:50,cat:'mind',difficulty:'hard',  has_timer:false,id:-216,min_level:3},
-  // LIFE
-  {name:'Cook instead of ordering',      xp:30,cat:'life',difficulty:'medium',has_timer:false,id:-217,min_level:1},
-  {name:'Text someone you care about',   xp:20,cat:'life',difficulty:'easy',  has_timer:false,id:-219,min_level:1},
-  {name:'No smoking for 1 hour',         xp:35,cat:'life',difficulty:'hard',  has_timer:true, id:-220,min_level:2},
-  {name:'Do that one thing you postpone',xp:50,cat:'life',difficulty:'hard',  has_timer:false,id:-221,min_level:2},
+  {name:'30 min walk outside',           xp:40,cat:'body',difficulty:'medium',has_timer:false,id:-210,min_level:3},
+  {name:'Research gym nearby',           xp:30,cat:'body',difficulty:'easy',  has_timer:false,id:-211,min_level:3},
+  // MIND - lvl 1: tiny steps
+  {name:'No phone for 30 min after waking',xp:25,cat:'mind',difficulty:'medium',has_timer:true,id:-212,min_level:1},
+  {name:'Write one thing you want to do today',xp:15,cat:'mind',difficulty:'easy',has_timer:false,id:-213,min_level:1},
+  {name:'Eat something real today',      xp:15,cat:'mind',difficulty:'easy',  has_timer:false,id:-214,min_level:1},
+  // MIND - lvl 2: focus
+  {name:'1 hour of work — no games',     xp:50,cat:'mind',difficulty:'hard',  has_timer:false,id:-215,min_level:2},
+  {name:'No social media until 2pm',     xp:30,cat:'mind',difficulty:'medium',has_timer:false,id:-216,min_level:2},
+  {name:'Read 15 min',                   xp:25,cat:'mind',difficulty:'easy',  has_timer:true, id:-217,min_level:2},
+  // MIND - lvl 3: building back
+  {name:'2 hours work session',          xp:70,cat:'mind',difficulty:'hard',  has_timer:false,id:-218,min_level:3},
+  {name:'Find one freelance lead',       xp:50,cat:'mind',difficulty:'hard',  has_timer:false,id:-219,min_level:3},
+  // LIFE - lvl 1: basic care
+  {name:'Wash dishes if any',            xp:15,cat:'life',difficulty:'easy',  has_timer:false,id:-220,min_level:1},
+  {name:'Open window for fresh air 10min',xp:10,cat:'life',difficulty:'easy', has_timer:true, id:-221,min_level:1},
+  {name:'Cook something instead of ordering',xp:30,cat:'life',difficulty:'medium',has_timer:false,id:-222,min_level:1},
+  // LIFE - lvl 2
+  {name:'Tidy up your desk',             xp:20,cat:'life',difficulty:'easy',  has_timer:false,id:-223,min_level:2},
+  {name:'Text someone you care about',   xp:20,cat:'life',difficulty:'easy',  has_timer:false,id:-224,min_level:2},
+  {name:'No smoking for 2 hours straight',xp:40,cat:'life',difficulty:'hard', has_timer:true, id:-225,min_level:2},
+  // LIFE - lvl 3
+  {name:'Do one thing you keep postponing',xp:50,cat:'life',difficulty:'hard',has_timer:false,id:-226,min_level:3},
+  {name:'Go outside just to walk — no goal',xp:35,cat:'life',difficulty:'medium',has_timer:false,id:-227,min_level:3},
 ];
 
 const REQUIRED_TASKS=[
-  // BEFORE COMPUTER
-  {id:-101,name:'Wash face',                    xp:5, cat:'life',icon:'💦',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
-  {id:-102,name:'Drink a glass of water',        xp:5, cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
-  {id:-103,name:'Brush teeth',                   xp:5, cat:'life',icon:'🪷',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
-  {id:-104,name:'Stretch 2 minutes',             xp:10,cat:'body',icon:'🧘',difficulty:'easy',has_timer:true, required:true,time_slot:'morning'},
-  {id:-105,name:'Write one thing to do today',   xp:5, cat:'mind',icon:'✏️',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
-  // BREAK THE LOOP
-  {id:-106,name:'Every smoke at the window',     xp:10,cat:'life',icon:'🚬',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  {id:-107,name:'Stand up & move 2 min',         xp:5, cat:'body',icon:'🚶',difficulty:'easy',has_timer:true, required:true,time_slot:'day'},
-  {id:-108,name:'Drink water again',             xp:5, cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  {id:-109,name:'Eat something before you smoke',xp:10,cat:'body',icon:'🍜',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  {id:-110,name:'Open window 10 min',            xp:5, cat:'body',icon:'🪟',difficulty:'easy',has_timer:true, required:true,time_slot:'day'},
-  {id:-111,name:'10 squats right now',           xp:10,cat:'body',icon:'💪',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  // BEFORE SLEEP
-  {id:-112,name:'Step outside for 5 min',        xp:20,cat:'body',icon:'🌃',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
-  {id:-113,name:'Tidy desk before sleep',        xp:5, cat:'life',icon:'🧹',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
-  {id:-114,name:'Phone down 20 min before bed',  xp:10,cat:'mind',icon:'📵',difficulty:'easy',has_timer:true, required:true,time_slot:'evening'},
-  {id:-115,name:'Wash face before sleep',        xp:5, cat:'life',icon:'💦',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  // AFTER WAKING UP (no time, just sequence)
+  {id:-101,name:'Wash face',                  xp:10,cat:'life',icon:'🪧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-102,name:'Drink water before 1st smoke',xp:15,cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-103,name:'5 min stretch on floor',      xp:20,cat:'body',icon:'🧘',difficulty:'easy',has_timer:true, required:true,time_slot:'morning'},
+  // DURING THE DAY
+  {id:-104,name:'Every smoke — stand at window',xp:10,cat:'body',icon:'🚬',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-105,name:'Get up from desk once today',  xp:10,cat:'body',icon:'🚶',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-106,name:'Drink 2 glasses of water',     xp:10,cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  // EVENING
+  {id:-107,name:'Step outside for 5 min',       xp:25,cat:'body',icon:'🌿',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
 ];
 
 const BONUS_QUESTS=[
-  {name:'No delivery today',       desc:'Cook or find food at home. No ordering.',xp:80},
-  {name:'Walk outside 20 min',     desc:'Just walk. No destination needed.',xp:100},
-  {name:'1 hour zero distractions',desc:'Work, read, or create. No games, no feeds.',xp:120},
-  {name:'Early to bed',            desc:'In bed before midnight. Phone stays outside.',xp:80},
-  {name:'No smoking inside',       desc:'Every cigarette today at the window. All day.',xp:100},
-  {name:'Call or text 2 people',   desc:'Reconnect with someone. Anyone.',xp:60},
-  {name:'Full workout',            desc:'20+ minutes of real movement on the mat.',xp:120},
-  {name:'Eat 3 real meals',        desc:'Breakfast, lunch, dinner. No junk.',xp:100},
-  {name:'Phone-free morning',      desc:'No phone for first hour after waking.',xp:80},
-  {name:'Fix one thing',           desc:'That one thing you keep postponing. Do it.',xp:100},
+  {name:'100 Squats',desc:'Do 100 squats throughout the day.',xp:150},
+  {name:'No Social Media Before Lunch',desc:'Zero social media until after 12pm.',xp:100},
+  {name:'Drink 3L of Water',desc:'Stay hydrated all day.',xp:80},
+  {name:'No Sugar Today',desc:'Zero added sugar for the entire day.',xp:120},
+  {name:'Reconnect',desc:'Call someone you have been putting off.',xp:80},
+  {name:'Cook a Real Meal',desc:'No delivery. Cook from scratch.',xp:100},
+  {name:'1 Hour Deep Work',desc:'Deep focus, one full hour.',xp:150},
+  {name:'Early Sleep',desc:'In bed by 10pm.',xp:80},
+  {name:'Ice Cold Shower',desc:'Cold all the way. 3+ minutes.',xp:120},
+  {name:'Read 30 Pages',desc:'Read 30 pages of a book.',xp:80},
+  {name:'No Coffee Today',desc:'Face the day without caffeine.',xp:60},
 ];
 
 const RANDOM_EVENTS=[
@@ -668,9 +665,7 @@ function setSS(ok,msg){document.getElementById('sync-dot').className='sync-dot'+
 
 async function init(){
   document.getElementById('today-label').textContent=greeting();
-  const _dayNum=parseInt(localStorage.getItem('grind_day_num')||'1');
-  const _calDate=new Date().toLocaleDateString('en',{weekday:'long',month:'long',day:'numeric'});
-  document.getElementById('today-date').textContent='Day '+_dayNum+' · '+_calDate;
+  document.getElementById('today-date').textContent=new Date().toLocaleDateString('en',{weekday:'long',month:'long',day:'numeric'});
   setSS(false,'loading...');
   const [t,c]=await Promise.all([dbGet('grind_tasks','order=created_at.asc'),dbGet('grind_completions','order=date.desc')]);
   if(t===null||c===null){setSS(false,'error');return;}
@@ -681,10 +676,10 @@ async function init(){
 function greeting(){const h=new Date().getHours();if(h<12)return'Good morning';if(h<17)return'Good afternoon';return'Good evening';}
 
 function loadDaily(){
-  const s=localStorage.getItem('grind_roll_'+today);
-  if(s)dailyRoll=JSON.parse(s);else{dailyRoll=genRoll();localStorage.setItem('grind_roll_'+today,JSON.stringify(dailyRoll));}
-  todaySkips=parseInt(localStorage.getItem('grind_skips_'+today)||'0');
-  doubleXP=localStorage.getItem('grind_double_'+today)==='1';
+  const s=localStorage.getItem('grind_roll_'+sessionKey);
+  if(s)dailyRoll=JSON.parse(s);else{dailyRoll=genRoll();localStorage.setItem('grind_roll_'+sessionKey,JSON.stringify(dailyRoll));}
+  todaySkips=parseInt(localStorage.getItem('grind_skips_'+sessionKey)||'0');
+  doubleXP=localStorage.getItem('grind_double_'+sessionKey)==='1';
 }
 
 function genRoll(){
@@ -711,12 +706,12 @@ function getBestStreak(){
   return best;
 }
 function getMult(streak){if(streak>=30)return 2.0;if(streak>=7)return 1.5;if(streak>=3)return 1.2;return 1.0;}
-function getTodayXP(){return completions.filter(c=>c.date===today).reduce((s,c)=>s+(c.xp||0),0);}
-function getDoneIds(){return completions.filter(c=>c.date===today).map(c=>String(c.task_id));}
-function getSkippedIds(){return JSON.parse(localStorage.getItem('grind_skipped_'+today)||'[]');}
+function getTodayXP(){return completions.filter(c=>c.date===today||c.session_key===sessionKey).reduce((s,c)=>s+(c.xp||0),0);}
+function getDoneIds(){return completions.filter(c=>c.date===today||c.session_key===sessionKey).map(c=>String(c.task_id));}
+function getSkippedIds(){return JSON.parse(localStorage.getItem('grind_skipped_'+sessionKey)||'[]');}
 
 function getActiveTasks(){
-  const overrides=JSON.parse(localStorage.getItem('grind_task_overrides_'+today)||'{}');
+  const overrides=JSON.parse(localStorage.getItem('grind_task_overrides_'+sessionKey)||'{}');
   const seed=parseInt(today.replace(/-/g,''))%1000;
   const xp=getTotalXP();const lvlIdx=LEVELS.indexOf(getLevel(xp))+1;
   const slotCats={day:['body','mind'],evening:['life']};
@@ -755,8 +750,7 @@ function renderStats(){
   document.getElementById('xp-cur').textContent=xp;
   if(next){document.getElementById('xp-needed').textContent=next.min;document.getElementById('xp-fill').style.width=Math.round((xp-lvl.min)/(next.min-lvl.min)*100)+'%';}
   else{document.getElementById('xp-needed').textContent=xp;document.getElementById('xp-fill').style.width='100%';}
-  const streak=parseInt(localStorage.getItem('grind_manual_streak')||'0');
-  const best=parseInt(localStorage.getItem('grind_best_streak')||'0');
+  const streak=getStreak();const best=getBestStreak();
   document.getElementById('streak-num').textContent=streak;
   document.getElementById('streak-best').textContent='Best: '+best+' days';
   const mult=getMult(streak);const mb=document.getElementById('mult-badge');
@@ -789,12 +783,12 @@ function makeTask(t,done,skipped){
   const id=String(t.id);
   const timer=t.has_timer&&!done&&!skipped?'<button class="task-btn timer-btn'+(timerIntervals[id]?' running':'')+'" onclick="startTimer(\''+id+'\',event)">'+(timerIntervals[id]?'<span id="tc-'+id+'">0:00</span>':'\u25B65m')+'</button>':'';
   const skip=!done&&!skipped&&todaySkips<MAX_SKIPS?'<button class="task-btn skip-btn" onclick="skipTask(\''+id+'\',event)">Skip</button>':'';
-  const vote='';
+  const vote=done&&!localStorage.getItem('grind_vote_'+sessionKey+'_'+id)?'<div class="diff-vote"><button class="dvb easy" onclick="voteTask(\''+id+'\',\'easy\',event)">Easy</button><button class="dvb meh" onclick="voteTask(\''+id+'\',\'meh\',event)">Meh</button><button class="dvb hard" onclick="voteTask(\''+id+'\',\'hard\',event)">Hard</button></div>':'';
   return '<div class="task-item'+(done?' done':skipped?' skipped':'')+'" onclick="toggleTask(\''+id+'\','+t.xp+','+done+','+skipped+')">'
     +'<div class="task-check">'+(done?'\u2713':skipped?'\u2014':'')+'</div>'
     +'<div class="task-info"><div class="task-name">'+t.name+'</div>'
     +'<div class="task-meta"><span class="task-xp">+'+t.xp+'xp</span><span class="'+dc+'">'+(t.difficulty||'medium')+'</span>'+timer+skip+'</div>'
-    +'</div></div>';
+    +vote+'</div></div>';
 }
 
 function floatXP(amt,neg){
@@ -815,7 +809,7 @@ async function toggleTask(taskId,xp,done,skipped){
     if(comp){await dbDel('grind_completions',comp.id);completions=completions.filter(c=>c.id!==comp.id);}
   } else {
     const mult=getMult(getStreak());const earned=Math.round(xp*mult*(doubleXP?2:1));
-    if(doubleXP){doubleXP=false;localStorage.removeItem('grind_double_'+today);}
+    if(doubleXP){doubleXP=false;localStorage.removeItem('grind_double_'+sessionKey);}
     setSS(false,'saving...');
     const r=await dbIns('grind_completions',{task_id:parseInt(taskId)||0,date:today,xp:earned});
     if(r){completions.push(Array.isArray(r)?r[0]:r);setSS(true,'saved');floatXP(earned,false);checkNewAchievements();showToast('+'+earned+' XP'+(mult>1?' (\xD7'+mult+')':''));checkLevelUp();}
@@ -827,14 +821,14 @@ async function toggleTask(taskId,xp,done,skipped){
 async function skipTask(id,e){
   e.stopPropagation();
   if(todaySkips>=MAX_SKIPS){showToast('No skips left!');return;}
-  const s=getSkippedIds();s.push(id);localStorage.setItem('grind_skipped_'+today,JSON.stringify(s));
-  todaySkips++;localStorage.setItem('grind_skips_'+today,todaySkips);
+  const s=getSkippedIds();s.push(id);localStorage.setItem('grind_skipped_'+sessionKey,JSON.stringify(s));
+  todaySkips++;localStorage.setItem('grind_skips_'+sessionKey,todaySkips);
   const pen=await dbIns('grind_completions',{task_id:-999,date:today,xp:-5});
   if(pen)completions.push(Array.isArray(pen)?pen[0]:pen);
   showToast('-5 XP ✕ Skipped · '+(MAX_SKIPS-todaySkips)+' left');renderAll();
 }
 
-function voteTask(id,v,e){e.stopPropagation();localStorage.setItem('grind_vote_'+today+'_'+id,v);showToast('Got it!');renderAll();}
+function voteTask(id,v,e){e.stopPropagation();localStorage.setItem('grind_vote_'+sessionKey+'_'+id,v);showToast('Got it!');renderAll();}
 
 async function completeBlock(slot){
   const active=getActiveTasks().filter(t=>t.time_slot===slot);
@@ -864,8 +858,8 @@ function toggleLazyMode(){lazyMode=!lazyMode;const b=document.getElementById('la
 function rerollDay(){
   if(!confirm('Reroll uses 1 skip. Continue?'))return;
   if(todaySkips>=MAX_SKIPS){showToast('No skips left!');return;}
-  todaySkips++;localStorage.setItem('grind_skips_'+today,todaySkips);
-  dailyRoll=genRoll();localStorage.setItem('grind_roll_'+today,JSON.stringify(dailyRoll));
+  todaySkips++;localStorage.setItem('grind_skips_'+sessionKey,todaySkips);
+  dailyRoll=genRoll();localStorage.setItem('grind_roll_'+sessionKey,JSON.stringify(dailyRoll));
   showToast('\uD83C\uDFB2 New tasks rolled!');renderAll();
 }
 
@@ -873,29 +867,29 @@ function useFreeze(){const f=parseInt(localStorage.getItem('grind_freezes')||'1'
 
 // DAILY ROLL
 function renderRoll(){
-  const el=document.getElementById('roll-options');const sel=localStorage.getItem('grind_roll_sel_'+today);const done=localStorage.getItem('grind_roll_done_'+today)==='1';
+  const el=document.getElementById('roll-options');const sel=localStorage.getItem('grind_roll_sel_'+sessionKey);const done=localStorage.getItem('grind_roll_done_'+sessionKey)==='1';
   document.getElementById('roll-pick-lbl').textContent=done?'\u2705 Bonus earned!':'Pick 1 of 3 for bonus XP';
   el.innerHTML=(dailyRoll||[]).map((t,i)=>'<div class="roll-option'+(sel===String(i)?' selected':'')+(done&&sel===String(i)?' done':'')+'" onclick="selectRoll('+i+')">'
     +'<div class="roll-name">'+t.name+'</div><div class="roll-xp">+'+Math.round((t.xp||25)*1.5)+'xp</div></div>').join('');
 }
 
 async function selectRoll(idx){
-  if(localStorage.getItem('grind_roll_done_'+today)==='1')return;
-  const sel=localStorage.getItem('grind_roll_sel_'+today);
+  if(localStorage.getItem('grind_roll_done_'+sessionKey)==='1')return;
+  const sel=localStorage.getItem('grind_roll_sel_'+sessionKey);
   if(sel===String(idx)){
     const t=dailyRoll[idx];const bxp=Math.round((t.xp||25)*1.5);
-    localStorage.setItem('grind_roll_done_'+today,'1');setSS(false,'saving...');
+    localStorage.setItem('grind_roll_done_'+sessionKey,'1');setSS(false,'saving...');
     const r=await dbIns('grind_completions',{task_id:-998,date:today,xp:bxp});
     if(r){completions.push(Array.isArray(r)?r[0]:r);setSS(true,'saved');showToast('+'+bxp+' XP bonus! \uD83C\uDFAF',2000);checkLevelUp();}
     else setSS(false,'error');
     renderAll();
-  } else {localStorage.setItem('grind_roll_sel_'+today,String(idx));renderRoll();}
+  } else {localStorage.setItem('grind_roll_sel_'+sessionKey,String(idx));renderRoll();}
 }
 
 // BONUS QUEST
 function renderBonus(){
-  const seed=(new Date(today).getDay()+Math.floor(new Date(today).getDate()/7))%BONUS_QUESTS.length;
-  const q=BONUS_QUESTS[seed];const done=localStorage.getItem('grind_bonus_'+today)==='1';
+  const _bseed=parseInt(sessionKey.replace(/[^0-9]/g,'').slice(-4)||'1');const seed=Math.abs(_bseed)%Math.max(BONUS_QUESTS.length,1);
+  const q=BONUS_QUESTS[seed];const done=localStorage.getItem('grind_bonus_'+sessionKey)==='1';
   document.getElementById('bonus-name').textContent=(done?'\u2705 ':'')+q.name;
   document.getElementById('bonus-desc').textContent=q.desc;
   document.getElementById('bonus-xp').textContent='+'+q.xp+' XP';
@@ -908,9 +902,9 @@ function startBonusTimer(){
 }
 
 async function completeBonusQuest(){
-  if(localStorage.getItem('grind_bonus_'+today)==='1'){showToast('Already done!');return;}
-  const seed=(new Date(today).getDay()+Math.floor(new Date(today).getDate()/7))%BONUS_QUESTS.length;
-  const q=BONUS_QUESTS[seed];localStorage.setItem('grind_bonus_'+today,'1');setSS(false,'saving...');
+  if(localStorage.getItem('grind_bonus_'+sessionKey)==='1'){showToast('Already done!');return;}
+  const _bseed=parseInt(sessionKey.replace(/[^0-9]/g,'').slice(-4)||'1');const seed=Math.abs(_bseed)%Math.max(BONUS_QUESTS.length,1);
+  const q=BONUS_QUESTS[seed];localStorage.setItem('grind_bonus_'+sessionKey,'1');setSS(false,'saving...');
   const r=await dbIns('grind_completions',{task_id:-997,date:today,xp:q.xp});
   if(r){completions.push(Array.isArray(r)?r[0]:r);setSS(true,'saved');checkNewAchievements();showToast('+'+q.xp+' XP \uD83C\uDFAF',2000);checkLevelUp();}
   else setSS(false,'error');renderAll();
@@ -929,7 +923,7 @@ function maybeShowEvent(){
 async function completeEvent(){
   const raw=localStorage.getItem('grind_event_data');if(!raw)return;
   const ev=JSON.parse(raw);
-  if(ev.special==='double_xp'){doubleXP=true;localStorage.setItem('grind_double_'+today,'1');showToast('\u26A1 DOUBLE XP on next task!');}
+  if(ev.special==='double_xp'){doubleXP=true;localStorage.setItem('grind_double_'+sessionKey,'1');showToast('\u26A1 DOUBLE XP on next task!');}
   else if(ev.xp>0){const r=await dbIns('grind_completions',{task_id:-996,date:today,xp:ev.xp});if(r){completions.push(Array.isArray(r)?r[0]:r);showToast('+'+ev.xp+' XP!');checkLevelUp();}}
   document.getElementById('event-card').style.display='none';renderAll();
 }
@@ -951,7 +945,7 @@ const ACHIEVES=[
   {r:'common',icon:'🌙',name:'Night Owl',desc:'Complete 3 evening tasks',xp:5,check:()=>completions.filter(c=>c.xp>0).length>=3},
   {r:'common',icon:'🧹',name:'Tidy Up',desc:'Log 1 full day',xp:5,check:()=>new Set(completions.map(c=>c.date)).size>=1},
   {r:'common',icon:'🎲',name:'Lucky Roll',desc:'Complete a Daily Roll task',xp:10,check:()=>completions.some(c=>String(c.task_id).startsWith('roll_'))},
-  {r:'common',icon:'✅',name:'Perfect Day',desc:'0 skips on any day with tasks done',xp:15,check:()=>parseInt(localStorage.getItem('grind_skips_'+today)||'0')===0&&getDoneIds().length>0},
+  {r:'common',icon:'✅',name:'Perfect Day',desc:'0 skips on any day with tasks done',xp:15,check:()=>parseInt(localStorage.getItem('grind_skips_'+sessionKey)||'0')===0&&getDoneIds().length>0},
   {r:'common',icon:'📝',name:'Journalist',desc:'Write 3 daily notes',xp:10,check:()=>{let n=0;for(let i=0;i<60;i++){const d=new Date();d.setDate(d.getDate()-i);if(localStorage.getItem('grind_note_'+d.toISOString().slice(0,10)))n++;}return n>=3;}},
   {r:'common',icon:'😊',name:'Good Vibes',desc:'Log a positive mood 5 times',xp:10,check:()=>{let n=0;for(let i=0;i<60;i++){const d=new Date();d.setDate(d.getDate()-i);const m=localStorage.getItem('grind_mood_'+d.toISOString().slice(0,10));if(m==='great'||m==='fire')n++;}return n>=5;}},
   {r:'common',icon:'📅',name:'Week Done',desc:'Log 7 active days total',xp:20,check:()=>new Set(completions.filter(c=>c.xp>0).map(c=>c.date)).size>=7},
@@ -1011,9 +1005,9 @@ function renderLevelList(){const xp=getTotalXP();const cur=getLevel(xp);document
 function renderWC(){const s=getStreak();const pct=Math.min(s/7*100,100);document.getElementById('wc-lbl').textContent=Math.min(s,7)+' / 7 days';document.getElementById('wc-fill').style.width=pct+'%';}
 
 // MOOD
-function setMood(m){document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));event.target.classList.add('selected');localStorage.setItem('grind_mood_'+today,m);}
-function saveNote(){const n=document.getElementById('day-note').value.trim();if(n)localStorage.setItem('grind_note_'+today,n);}
-function restoreMood(){const m=localStorage.getItem('grind_mood_'+today);if(m){const emojis={tired:'\uD83D\uDE14',meh:'\uD83D\uDE10',good:'\uD83D\uDE42',great:'\uD83D\uDE0E',fire:'\uD83D\uDD25'};document.querySelectorAll('.mood-btn').forEach(b=>{if(b.textContent===emojis[m])b.classList.add('selected');});}const n=localStorage.getItem('grind_note_'+today);if(n)document.getElementById('day-note').value=n;}
+function setMood(m){document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));event.target.classList.add('selected');localStorage.setItem('grind_mood_'+sessionKey,m);}
+function saveNote(){const n=document.getElementById('day-note').value.trim();if(n)localStorage.setItem('grind_note_'+sessionKey,n);}
+function restoreMood(){const m=localStorage.getItem('grind_mood_'+sessionKey);if(m){const emojis={tired:'\uD83D\uDE14',meh:'\uD83D\uDE10',good:'\uD83D\uDE42',great:'\uD83D\uDE0E',fire:'\uD83D\uDD25'};document.querySelectorAll('.mood-btn').forEach(b=>{if(b.textContent===emojis[m])b.classList.add('selected');});}const n=localStorage.getItem('grind_note_'+sessionKey);if(n)document.getElementById('day-note').value=n;}
 
 // ADD TASK
 async function addTask(){
@@ -1113,7 +1107,7 @@ function renderInsights(){
 function checkWeeklyReport(){
   if(new Date().getDay()!==0)return;
   if(!completions.length)return; // no completions = nothing to report
-  const key='grind_weekly_'+today;if(localStorage.getItem(key))return;
+  const key='grind_weekly_'+sessionKey;if(localStorage.getItem(key))return;
   localStorage.setItem(key,'1');
   const d=new Date();d.setDate(d.getDate()-7);const ws=d.toISOString().slice(0,10);
   const wc=completions.filter(cc=>cc.date>=ws);
@@ -1156,17 +1150,16 @@ async function resetAllXP(){
   showToast('XP reset. Fresh start!',2000);
   renderAll();
 }
-let _checkingAch=false;
 function checkNewAchievements(){
-  if(_checkingAch)return;
-  _checkingAch=true;
-  setTimeout(()=>{_checkingAch=false;},3000);
   ACHIEVES.forEach(a=>{
     const key='grind_ach_'+a.name;
     if(!localStorage.getItem(key)&&a.check()){
-      localStorage.setItem(key,'1');
+      localStorage.setItem(key,'1'); // mark immediately before async call
       dbIns('grind_completions',{task_id:-995,date:today,xp:a.xp}).then(r=>{
-        if(r){completions.push(Array.isArray(r)?r[0]:r);showToast(a.icon+' '+a.name+' +'+a.xp+' XP',2500);}
+        if(r){
+          completions.push(Array.isArray(r)?r[0]:r);
+          showToast(a.icon+' '+a.name+' +'+a.xp+' XP',2500);
+        }
       });
     }
   });
@@ -1180,35 +1173,6 @@ function editPlayerName(){
     if(el)el.textContent=name.trim();
     showToast('Name updated!');
   }
-}
-async function endDay(){
-  const doneCount=getDoneIds().length;
-  const total=getActiveTasks().length;
-  const xpToday=getTodayXP();
-  if(!confirm('End your day?\n\nDone: '+doneCount+' of '+total+' tasks\nXP earned: +'+xpToday+'\n\nTasks will reset for next session.'))return;
-  saveNote();
-  const now=new Date();
-  const calDate=now.toISOString().slice(0,10);
-  const dayNum=parseInt(localStorage.getItem('grind_day_num')||'0')+1;
-  localStorage.setItem('grind_day_num',dayNum);
-  localStorage.setItem('grind_session_date_'+today,calDate);
-  if(doneCount>=1){
-    const lastSession=localStorage.getItem('grind_last_ended_session');
-    const streak=parseInt(localStorage.getItem('grind_manual_streak')||'0');
-    const lastDate=lastSession?new Date(lastSession.slice(0,10)):null;
-    const daysDiff=lastDate?Math.round((now-lastDate)/86400000):999;
-    const newStreak=daysDiff<=2?streak+1:1;
-    localStorage.setItem('grind_manual_streak',String(newStreak));
-    localStorage.setItem('grind_best_streak',String(Math.max(newStreak,parseInt(localStorage.getItem('grind_best_streak')||'0'))));
-    showToast('Day '+dayNum+' done! Streak: '+newStreak,3000);
-  } else {
-    localStorage.setItem('grind_manual_streak','0');
-    showToast('Day '+dayNum+' ended. Do more tomorrow.',2500);
-  }
-  localStorage.setItem('grind_last_ended_session',today);
-  const newSession=calDate+'_s'+now.getHours()+'h'+now.getMinutes()+'m'+now.getSeconds();
-  localStorage.setItem('grind_session_override',newSession);
-  setTimeout(()=>window.location.reload(),2000);
 }
 function showToast(msg,dur=1600){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
 </script>
