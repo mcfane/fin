@@ -248,7 +248,7 @@ select.field option{background:var(--s2)}
         <div class="avatar" id="player-avatar">&#x1F480;</div>
         <div>
           <div class="player-lvl-badge" id="player-lvl-badge">LVL 1 &#xB7; NOVICE</div>
-          <div style="display:flex;align-items:center;justify-content:space-between"><div class="player-name">Player One</div><button onclick="if(confirm('Reset all XP and progress?'))resetAllXP()" style="background:none;border:1px solid var(--line2);border-radius:var(--rs);color:var(--t3);font-size:9px;font-weight:700;cursor:pointer;padding:3px 8px;font-family:Outfit,sans-serif;text-transform:uppercase">Reset</button></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><div class="player-name" id="player-name-display" onclick="editPlayerName()" style="cursor:pointer" title="Click to edit"><span id="player-name-text"></span><span style="font-size:11px;color:var(--t3);margin-left:6px;font-weight:500">✎</span></div><button onclick="if(confirm('Reset all XP and progress?'))resetAllXP()" style="background:none;border:1px solid var(--line2);border-radius:var(--rs);color:var(--t3);font-size:9px;font-weight:700;cursor:pointer;padding:3px 8px;font-family:Outfit,sans-serif;text-transform:uppercase">Reset</button></div>
         </div>
       </div>
       <div class="xp-bar-row"><span class="xp-label">XP TO NEXT</span><span class="xp-val"><span id="xp-cur">0</span> / <span id="xp-needed">200</span></span></div>
@@ -549,92 +549,72 @@ const today=new Date().toISOString().slice(0,10);
 const MAX_SKIPS=3;
 
 const LEVELS=[
-  {min:0,name:'Novice',title:'Just Starting',icon:'💀'},
-  {min:250,name:'Initiate',title:'First Steps',icon:'🌱'},
-  {min:500,name:'Apprentice',title:'Building Habits',icon:'⚡'},
-  {min:750,name:'Seeker',title:'Finding Rhythm',icon:'🔍'},
-  {min:1100,name:'Grinder',title:'Getting Consistent',icon:'💪'},
-  {min:1500,name:'Hustler',title:'Locked In',icon:'🔥'},
-  {min:2000,name:'Fighter',title:'Pushing Limits',icon:'🥊'},
-  {min:2700,name:'Warrior',title:'Discipline Mode',icon:'⚔️'},
-  {min:3500,name:'Soldier',title:'No Excuses',icon:'🛡️'},
-  {min:4500,name:'Knight',title:'Honor and Grind',icon:'🎯'},
-  {min:6000,name:'Elite',title:'Above Average',icon:'🏆'},
-  {min:8000,name:'Champion',title:'Top Tier',icon:'🥇'},
-  {min:10500,name:'Master',title:'Mastery Unlocked',icon:'🧠'},
-  {min:13500,name:'Virtuoso',title:'Natural Discipline',icon:'✨'},
-  {min:17000,name:'Legend',title:'People Talk About You',icon:'👑'},
-  {min:21000,name:'Mythic',title:'Beyond Normal',icon:'🌀'},
-  {min:26000,name:'Phantom',title:'Ghost Mode',icon:'👻'},
-  {min:32000,name:'Titan',title:'Unstoppable Force',icon:'🧊'},
-  {min:40000,name:'Ascendant',title:'Transcending Limits',icon:'🌠'},
-  {min:50000,name:'Eternal',title:'No Days Off Ever',icon:'🌟'},
+  {min:0,    name:'Couch Mode',   title:'Day 1. Just starting.',         icon:'🛋️'},
+  {min:250,  name:'Awakening',    title:'Something is shifting.',         icon:'🌱'},
+  {min:500,  name:'Moving',       title:'Body remembers it can move.',    icon:'🚶'},
+  {min:750,  name:'Consistent',   title:'3 days in a row. Real.',         icon:'⚡'},
+  {min:1100, name:'Disciplined',  title:'You show up even when lazy.',    icon:'💪'},
+  {min:1500, name:'Grinder',      title:'Locked in.',                     icon:'🔥'},
+  {min:2000, name:'Fighter',      title:'You vs old you. Winning.',icon:'🥊'},
+  {min:2700, name:'Warrior',      title:'Discipline is a habit now.',     icon:'⚔️'},
+  {min:3500, name:'Unstoppable',  title:'No excuses left.',               icon:'🎯'},
+  {min:4500, name:'Machine',      title:'People notice the change.',      icon:'⚙️'},
+  {min:6000, name:'Elite',        title:'Top 1% of your old self.',       icon:'🏆'},
+  {min:8000, name:'Champion',     title:'Gym time.',                      icon:'🥇'},
+  {min:10500,name:'Legend',       title:'You became who you wanted.',     icon:'👑'},
 ];
 
 const BUILT_IN=[
-  // BODY - lvl 1: basic movement
-  {name:'10 pushups',                    xp:20,cat:'body',difficulty:'easy',  has_timer:false,id:-201,min_level:1},
-  {name:'20 squats',                     xp:20,cat:'body',difficulty:'easy',  has_timer:false,id:-202,min_level:1},
-  {name:'Walk around the apartment 5min',xp:15,cat:'body',difficulty:'easy',  has_timer:true, id:-203,min_level:1},
-  {name:'Stretch your neck and back',    xp:15,cat:'body',difficulty:'easy',  has_timer:true, id:-204,min_level:1},
-  // BODY - lvl 2: getting serious
-  {name:'20 min workout on the mat',     xp:50,cat:'body',difficulty:'medium',has_timer:true, id:-205,min_level:2},
-  {name:'30 pushups',                    xp:30,cat:'body',difficulty:'medium',has_timer:false,id:-206,min_level:2},
-  {name:'Go outside for 15 min walk',   xp:35,cat:'body',difficulty:'medium',has_timer:false,id:-207,min_level:2},
-  {name:'Cold shower',                   xp:40,cat:'body',difficulty:'hard',  has_timer:false,id:-208,min_level:2},
-  // BODY - lvl 3: real training
+  // BODY
+  {name:'10 pushups right now',          xp:20,cat:'body',difficulty:'easy',  has_timer:false,id:-201,min_level:1},
+  {name:'20 squats right now',           xp:20,cat:'body',difficulty:'easy',  has_timer:false,id:-202,min_level:1},
+  {name:'Open window fresh air 10 min',  xp:15,cat:'body',difficulty:'easy',  has_timer:true, id:-203,min_level:1},
+  {name:'Stretch neck & back 5 min',     xp:15,cat:'body',difficulty:'easy',  has_timer:true, id:-204,min_level:1},
+  {name:'Walk outside 10 min',           xp:35,cat:'body',difficulty:'medium',has_timer:false,id:-205,min_level:1},
+  {name:'20 min workout on the mat',     xp:50,cat:'body',difficulty:'hard',  has_timer:true, id:-206,min_level:2},
+  {name:'Cold shower',                   xp:40,cat:'body',difficulty:'hard',  has_timer:false,id:-207,min_level:2},
+  {name:'30 min walk outside',           xp:40,cat:'body',difficulty:'medium',has_timer:false,id:-208,min_level:2},
   {name:'30 min full workout',           xp:60,cat:'body',difficulty:'hard',  has_timer:true, id:-209,min_level:3},
-  {name:'30 min walk outside',           xp:40,cat:'body',difficulty:'medium',has_timer:false,id:-210,min_level:3},
-  {name:'Research gym nearby',           xp:30,cat:'body',difficulty:'easy',  has_timer:false,id:-211,min_level:3},
-  // MIND - lvl 1: tiny steps
-  {name:'No phone for 30 min after waking',xp:25,cat:'mind',difficulty:'medium',has_timer:true,id:-212,min_level:1},
-  {name:'Write one thing you want to do today',xp:15,cat:'mind',difficulty:'easy',has_timer:false,id:-213,min_level:1},
-  {name:'Eat something real today',      xp:15,cat:'mind',difficulty:'easy',  has_timer:false,id:-214,min_level:1},
-  // MIND - lvl 2: focus
-  {name:'1 hour of work — no games',     xp:50,cat:'mind',difficulty:'hard',  has_timer:false,id:-215,min_level:2},
-  {name:'No social media until 2pm',     xp:30,cat:'mind',difficulty:'medium',has_timer:false,id:-216,min_level:2},
-  {name:'Read 15 min',                   xp:25,cat:'mind',difficulty:'easy',  has_timer:true, id:-217,min_level:2},
-  // MIND - lvl 3: building back
-  {name:'2 hours work session',          xp:70,cat:'mind',difficulty:'hard',  has_timer:false,id:-218,min_level:3},
-  {name:'Find one freelance lead',       xp:50,cat:'mind',difficulty:'hard',  has_timer:false,id:-219,min_level:3},
-  // LIFE - lvl 1: basic care
-  {name:'Wash dishes if any',            xp:15,cat:'life',difficulty:'easy',  has_timer:false,id:-220,min_level:1},
-  {name:'Open window for fresh air 10min',xp:10,cat:'life',difficulty:'easy', has_timer:true, id:-221,min_level:1},
-  {name:'Cook something instead of ordering',xp:30,cat:'life',difficulty:'medium',has_timer:false,id:-222,min_level:1},
-  // LIFE - lvl 2
-  {name:'Tidy up your desk',             xp:20,cat:'life',difficulty:'easy',  has_timer:false,id:-223,min_level:2},
-  {name:'Text someone you care about',   xp:20,cat:'life',difficulty:'easy',  has_timer:false,id:-224,min_level:2},
-  {name:'No smoking for 2 hours straight',xp:40,cat:'life',difficulty:'hard', has_timer:true, id:-225,min_level:2},
-  // LIFE - lvl 3
-  {name:'Do one thing you keep postponing',xp:50,cat:'life',difficulty:'hard',has_timer:false,id:-226,min_level:3},
-  {name:'Go outside just to walk — no goal',xp:35,cat:'life',difficulty:'medium',has_timer:false,id:-227,min_level:3},
+  // MIND
+  {name:'No phone first 30 min',         xp:25,cat:'mind',difficulty:'medium',has_timer:true, id:-210,min_level:1},
+  {name:'Write what you want today',     xp:15,cat:'mind',difficulty:'easy',  has_timer:false,id:-211,min_level:1},
+  {name:'1 hour work no games',          xp:50,cat:'mind',difficulty:'hard',  has_timer:false,id:-212,min_level:1},
+  {name:'No social media until 2pm',     xp:30,cat:'mind',difficulty:'medium',has_timer:false,id:-213,min_level:2},
+  {name:'Read 20 min',                   xp:25,cat:'mind',difficulty:'easy',  has_timer:true, id:-214,min_level:2},
+  {name:'2 hours work session',          xp:70,cat:'mind',difficulty:'hard',  has_timer:false,id:-215,min_level:3},
+  {name:'Find one freelance lead',       xp:50,cat:'mind',difficulty:'hard',  has_timer:false,id:-216,min_level:3},
+  // LIFE
+  {name:'Cook instead of ordering',      xp:30,cat:'life',difficulty:'medium',has_timer:false,id:-217,min_level:1},
+  {name:'Tidy desk before sleep',        xp:15,cat:'life',difficulty:'easy',  has_timer:false,id:-218,min_level:1},
+  {name:'Text someone you care about',   xp:20,cat:'life',difficulty:'easy',  has_timer:false,id:-219,min_level:1},
+  {name:'No smoking for 1 hour',         xp:35,cat:'life',difficulty:'hard',  has_timer:true, id:-220,min_level:2},
+  {name:'Do that one thing you postpone',xp:50,cat:'life',difficulty:'hard',  has_timer:false,id:-221,min_level:2},
 ];
 
 const REQUIRED_TASKS=[
-  // AFTER WAKING UP (no time, just sequence)
-  {id:-101,name:'Wash face',                  xp:10,cat:'life',icon:'🪧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
-  {id:-102,name:'Drink water before 1st smoke',xp:15,cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
-  {id:-103,name:'5 min stretch on floor',      xp:20,cat:'body',icon:'🧘',difficulty:'easy',has_timer:true, required:true,time_slot:'morning'},
-  // DURING THE DAY
-  {id:-104,name:'Every smoke — stand at window',xp:10,cat:'body',icon:'🚬',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  {id:-105,name:'Get up from desk once today',  xp:10,cat:'body',icon:'🚶',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  {id:-106,name:'Drink 2 glasses of water',     xp:10,cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  // EVENING
-  {id:-107,name:'Step outside for 5 min',       xp:25,cat:'body',icon:'🌿',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  // BEFORE COMPUTER (do these before sitting down)
+  {id:-101,name:'Wash face & drink water',     xp:15,cat:'life',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-102,name:'5 min stretch before sitting',xp:20,cat:'body',icon:'🧘',difficulty:'easy',has_timer:true, required:true,time_slot:'morning'},
+  // BREAK FROM COMPUTER (interrupt the loop)
+  {id:-103,name:'Stand up & move for 5 min',   xp:15,cat:'body',icon:'🚶',difficulty:'easy',has_timer:true, required:true,time_slot:'day'},
+  {id:-104,name:'Every smoke at the window',    xp:20,cat:'life',icon:'🚬',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-105,name:'Eat something real today',     xp:15,cat:'body',icon:'🍽️',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  // BEFORE SLEEP (end the loop differently)
+  {id:-107,name:'Go outside before sleep',      xp:30,cat:'body',icon:'🌃',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  {id:-108,name:'Put phone down 20 min',        xp:20,cat:'mind',icon:'📵',difficulty:'easy',has_timer:true, required:true,time_slot:'evening'},
 ];
 
 const BONUS_QUESTS=[
-  {name:'100 Squats',desc:'Do 100 squats throughout the day.',xp:150},
-  {name:'No Social Media Before Lunch',desc:'Zero social media until after 12pm.',xp:100},
-  {name:'Drink 3L of Water',desc:'Stay hydrated all day.',xp:80},
-  {name:'No Sugar Today',desc:'Zero added sugar for the entire day.',xp:120},
-  {name:'Reconnect',desc:'Call someone you have been putting off.',xp:80},
-  {name:'Cook a Real Meal',desc:'No delivery. Cook from scratch.',xp:100},
-  {name:'1 Hour Deep Work',desc:'Deep focus, one full hour.',xp:150},
-  {name:'Early Sleep',desc:'In bed by 10pm.',xp:80},
-  {name:'Ice Cold Shower',desc:'Cold all the way. 3+ minutes.',xp:120},
-  {name:'Read 30 Pages',desc:'Read 30 pages of a book.',xp:80},
-  {name:'No Coffee Today',desc:'Face the day without caffeine.',xp:60},
+  {name:'No delivery today',       desc:'Cook or find food at home. No ordering.',xp:80},
+  {name:'Walk outside 20 min',     desc:'Just walk. No destination needed.',xp:100},
+  {name:'1 hour zero distractions',desc:'Work, read, or create. No games, no feeds.',xp:120},
+  {name:'Early to bed',            desc:'In bed before midnight. Phone stays outside.',xp:80},
+  {name:'No smoking inside',       desc:'Every cigarette today at the window. All day.',xp:100},
+  {name:'Call or text 2 people',   desc:'Reconnect with someone. Anyone.',xp:60},
+  {name:'Full workout',            desc:'20+ minutes of real movement on the mat.',xp:120},
+  {name:'Eat 3 real meals',        desc:'Breakfast, lunch, dinner. No junk.',xp:100},
+  {name:'Phone-free morning',      desc:'No phone for first hour after waking.',xp:80},
+  {name:'Fix one thing',           desc:'That one thing you keep postponing. Do it.',xp:100},
 ];
 
 const RANDOM_EVENTS=[
@@ -730,6 +710,9 @@ function getActiveTasks(){
 function renderStats(){
   const xp=getTotalXP();const lvl=getLevel(xp);const next=getNextLevel(xp);const idx=LEVELS.indexOf(lvl)+1;
   document.getElementById('player-avatar').textContent=lvl.icon;
+  const savedName=localStorage.getItem('grind_player_name')||'Player One';
+  const nameEl=document.getElementById('player-name-text');
+  if(nameEl)nameEl.textContent=savedName;
   document.getElementById('player-lvl-badge').textContent='LVL '+idx+' \xB7 '+lvl.name.toUpperCase();
   document.getElementById('stat-xp').textContent=xp;
   document.getElementById('stat-today').textContent=getTodayXP();
@@ -788,6 +771,11 @@ function floatXP(amt,neg){
 }
 async function toggleTask(taskId,xp,done,skipped){
   if(skipped)return;
+  // Prevent double-tap: if not done yet, check DB state first
+  if(!done){
+    const alreadyDone=completions.some(comp=>String(comp.task_id)===String(taskId)&&comp.date===today&&(comp.xp||0)>0);
+    if(alreadyDone)return;
+  }
   if(done){
     const comp=completions.find(c=>String(c.task_id)===String(taskId)&&c.date===today);
     if(comp){await dbDel('grind_completions',comp.id);completions=completions.filter(c=>c.id!==comp.id);}
@@ -796,7 +784,7 @@ async function toggleTask(taskId,xp,done,skipped){
     if(doubleXP){doubleXP=false;localStorage.removeItem('grind_double_'+today);}
     setSS(false,'saving...');
     const r=await dbIns('grind_completions',{task_id:parseInt(taskId)||0,date:today,xp:earned});
-    if(r){completions.push(Array.isArray(r)?r[0]:r);setSS(true,'saved');floatXP(earned,false);showToast('+'+earned+' XP'+(mult>1?' (\xD7'+mult+')':''));checkLevelUp();}
+    if(r){completions.push(Array.isArray(r)?r[0]:r);setSS(true,'saved');floatXP(earned,false);checkNewAchievements();showToast('+'+earned+' XP'+(mult>1?' (\xD7'+mult+')':''));checkLevelUp();}
     else setSS(false,'error');
   }
   renderAll();
@@ -829,7 +817,11 @@ function startTimer(id,e){
   e.stopPropagation();
   if(timerIntervals[id]){clearInterval(timerIntervals[id]);delete timerIntervals[id];renderTasks();return;}
   let s=300;
-  timerIntervals[id]=setInterval(()=>{s--;const el=document.getElementById('tc-'+id);if(el)el.textContent=Math.floor(s/60)+':'+(s%60).toString().padStart(2,'0');if(s<=0){clearInterval(timerIntervals[id]);delete timerIntervals[id];toggleTask(id,25,false,false);}},1000);
+  timerIntervals[id]=setInterval(()=>{s--;const el=document.getElementById('tc-'+id);if(el)el.textContent=Math.floor(s/60)+':'+(s%60).toString().padStart(2,'0');if(s<=0){
+    clearInterval(timerIntervals[id]);delete timerIntervals[id];
+    const taskXP=(getActiveTasks().find(t=>String(t.id)===String(id))||{xp:25}).xp;
+    toggleTask(id,taskXP,false,false);
+  }},1000);
   renderTasks();
 }
 
@@ -886,7 +878,7 @@ async function completeBonusQuest(){
   const seed=(new Date(today).getDay()+Math.floor(new Date(today).getDate()/7))%BONUS_QUESTS.length;
   const q=BONUS_QUESTS[seed];localStorage.setItem('grind_bonus_'+today,'1');setSS(false,'saving...');
   const r=await dbIns('grind_completions',{task_id:-997,date:today,xp:q.xp});
-  if(r){completions.push(Array.isArray(r)?r[0]:r);setSS(true,'saved');showToast('+'+q.xp+' XP \uD83C\uDFAF',2000);checkLevelUp();}
+  if(r){completions.push(Array.isArray(r)?r[0]:r);setSS(true,'saved');checkNewAchievements();showToast('+'+q.xp+' XP \uD83C\uDFAF',2000);checkLevelUp();}
   else setSS(false,'error');renderAll();
 }
 
@@ -972,10 +964,7 @@ function renderAchievements(){
         +'<div style="flex:1;min-width:0"><div class="achieve-name">'+a.name+'</div><div class="achieve-desc">'+a.desc+'</div></div>'
         +(u?'<div style="font-size:9px;font-weight:700;color:'+rb[r]+';text-transform:uppercase;letter-spacing:.08em;flex-shrink:0">'+a.xp+'xp</div>':'')
         +'</div>';
-      if(u&&!localStorage.getItem('grind_ach_'+a.name)){
-        localStorage.setItem('grind_ach_'+a.name,'1');
-        dbIns('grind_completions',{task_id:-995,date:today,xp:a.xp}).then(r=>{if(r){completions.push(Array.isArray(r)?r[0]:r);showToast(a.icon+' '+a.name+' +'+a.xp+'xp',2500);}});
-      }
+      // Achievement XP granted by checkNewAchievements() only
     });
   });
   document.getElementById('achievements-list').innerHTML=html;
@@ -1089,6 +1078,7 @@ function renderInsights(){
 }
 function checkWeeklyReport(){
   if(new Date().getDay()!==0)return;
+  if(!completions.length)return; // no completions = nothing to report
   const key='grind_weekly_'+today;if(localStorage.getItem(key))return;
   localStorage.setItem(key,'1');
   const d=new Date();d.setDate(d.getDate()-7);const ws=d.toISOString().slice(0,10);
@@ -1131,6 +1121,30 @@ async function resetAllXP(){
   Object.keys(localStorage).filter(k=>k.startsWith('grind_')).forEach(k=>localStorage.removeItem(k));
   showToast('XP reset. Fresh start!',2000);
   renderAll();
+}
+function checkNewAchievements(){
+  ACHIEVES.forEach(a=>{
+    const key='grind_ach_'+a.name;
+    if(!localStorage.getItem(key)&&a.check()){
+      localStorage.setItem(key,'1'); // mark immediately before async call
+      dbIns('grind_completions',{task_id:-995,date:today,xp:a.xp}).then(r=>{
+        if(r){
+          completions.push(Array.isArray(r)?r[0]:r);
+          showToast(a.icon+' '+a.name+' +'+a.xp+' XP',2500);
+        }
+      });
+    }
+  });
+}
+function editPlayerName(){
+  const current=localStorage.getItem('grind_player_name')||'Player One';
+  const name=prompt('Your name:',current);
+  if(name&&name.trim()){
+    localStorage.setItem('grind_player_name',name.trim());
+    const el=document.getElementById('player-name-text');
+    if(el)el.textContent=name.trim();
+    showToast('Name updated!');
+  }
 }
 function showToast(msg,dur=1600){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
 </script>
