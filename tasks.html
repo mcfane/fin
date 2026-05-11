@@ -204,7 +204,12 @@ select.field option{background:var(--s2)}
 .mob-nav a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;color:var(--t3);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;transition:color .15s}
 .mob-nav a.active{color:var(--g1)}
 .mob-nav a span{font-size:20px;line-height:1}
-
+.float-nav{position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:200;display:flex;flex-direction:column;background:var(--s2);border:1px solid var(--line2);border-right:none;border-radius:10px 0 0 10px;overflow:hidden}
+.float-nav a{display:flex;align-items:center;justify-content:center;width:36px;height:42px;text-decoration:none;font-size:15px;transition:background .15s;color:var(--t3)}
+.float-nav a:hover{background:var(--s4);color:var(--t1)}
+.float-nav a.active{background:var(--s3);color:var(--t1)}
+.float-nav-sep{height:1px;background:var(--line)}
+@media(max-width:900px){.float-nav{display:none}}
 @keyframes xpFloat{0%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}100%{opacity:0;transform:translateX(-50%) translateY(-70px) scale(1.3)}}
 .task-item.golden .task-name::after{content:' ✶';color:var(--y1);font-size:10px}
 .task-item.golden{border-color:rgba(245,158,11,.2)}
@@ -212,24 +217,9 @@ select.field option{background:var(--s2)}
 .achieve-item.epic{border-color:rgba(168,85,247,.4)!important}
 .achieve-item.legendary{border-color:rgba(245,158,11,.45)!important}
 
-
-.switcher{position:fixed;top:0;left:0;right:0;height:40px;background:var(--s1);border-bottom:1px solid var(--line2);z-index:8000;display:flex;align-items:center;justify-content:center;gap:4px}
-.sw-btn{padding:5px 18px;border-radius:var(--rx);font-size:11px;font-weight:800;text-decoration:none;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;transition:all .18s;border:1px solid transparent;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;background:transparent}
-.sw-btn:hover{color:var(--t2)}
-.sw-btn.active{background:var(--s4);color:var(--t1);border-color:var(--line2)}
-body{padding-top:40px}
-@media(max-width:700px){
-  .switcher{top:auto;bottom:0;border-top:1px solid var(--line2);border-bottom:none}
-  body{padding-top:0;padding-bottom:40px}
-}
-
 </style>
 </head>
 <body>
-<div class="switcher">
-  <a href="index.html" class="sw-btn">💰 Finance</a>
-  <a href="tasks.html" class="sw-btn active">⚡ Grind</a>
-</div>
 <div id="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">FIN</div>
@@ -241,10 +231,15 @@ body{padding-top:40px}
   </div>
 </div>
 <div class="toast" id="toast"></div>
-
+<div class="float-nav">
+  <a href="index.html" title="Finance">💰</a>
+  <div class="float-nav-sep"></div>
   <a href="tasks.html" class="active" title="Grind">⚡</a>
 </div>
-
+<nav class="mob-nav">
+  <a href="index.html"><span>💰</span>Finance</a>
+  <a href="tasks.html" class="active"><span>⚡</span>Grind</a>
+</nav>
 <div class="app">
 <!-- LEFT -->
 <div class="col">
@@ -449,10 +444,7 @@ body{padding-top:40px}
 
 <script>
 const SB_AUTH='https://ftxgcggckwwjkxnlmfxs.supabase.co';
-const SB='https://ftxgcggckwwjkxnlmfxs.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eGdjZ2dja3d3amt4bmxtZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzODcyNjAsImV4cCI6MjA5Mzk2MzI2MH0.6f3ygks9oIQp1vM43qt3Z7qf0T2Ouo74kLwjw2MZkO8';
-const KEY=SB_KEY;
-const H={'apikey':SB_KEY,'Authorization':'Bearer '+(localStorage.getItem('sb_token')||SB_KEY),'Content-Type':'application/json','Prefer':'return=representation'};
 
 async function doLogin(){
   const email=document.getElementById('auth-email').value.trim();
@@ -532,6 +524,98 @@ function getAuthHeader(){
 }
 
 window.addEventListener('DOMContentLoaded',checkAuth);
+const GEMINI_KEY='AIzaSyC0NVD4hjX0TJ67-C7hZXqeKJSisRq95Dc';
+const today=new Date().toISOString().slice(0,10);
+const MAX_SKIPS=3;
+
+const LEVELS=[
+  {min:0,name:'Novice',title:'Just Starting',icon:'💀'},
+  {min:250,name:'Initiate',title:'First Steps',icon:'🌱'},
+  {min:500,name:'Apprentice',title:'Building Habits',icon:'⚡'},
+  {min:750,name:'Seeker',title:'Finding Rhythm',icon:'🔍'},
+  {min:1100,name:'Grinder',title:'Getting Consistent',icon:'💪'},
+  {min:1500,name:'Hustler',title:'Locked In',icon:'🔥'},
+  {min:2000,name:'Fighter',title:'Pushing Limits',icon:'🥊'},
+  {min:2700,name:'Warrior',title:'Discipline Mode',icon:'⚔️'},
+  {min:3500,name:'Soldier',title:'No Excuses',icon:'🛡️'},
+  {min:4500,name:'Knight',title:'Honor and Grind',icon:'🎯'},
+  {min:6000,name:'Elite',title:'Above Average',icon:'🏆'},
+  {min:8000,name:'Champion',title:'Top Tier',icon:'🥇'},
+  {min:10500,name:'Master',title:'Mastery Unlocked',icon:'🧠'},
+  {min:13500,name:'Virtuoso',title:'Natural Discipline',icon:'✨'},
+  {min:17000,name:'Legend',title:'People Talk About You',icon:'👑'},
+  {min:21000,name:'Mythic',title:'Beyond Normal',icon:'🌀'},
+  {min:26000,name:'Phantom',title:'Ghost Mode',icon:'👻'},
+  {min:32000,name:'Titan',title:'Unstoppable Force',icon:'🧊'},
+  {min:40000,name:'Ascendant',title:'Transcending Limits',icon:'🌠'},
+  {min:50000,name:'Eternal',title:'No Days Off Ever',icon:'🌟'},
+];
+
+const BUILT_IN=[
+  {name:'20 min workout',xp:50,cat:'body',difficulty:'hard',has_timer:true,id:-1},
+  {name:'Go for a walk',xp:25,cat:'body',difficulty:'easy',has_timer:false,id:-2},
+  {name:'30 min walk outside',xp:35,cat:'body',difficulty:'medium',has_timer:false,id:-3},
+  {name:'Cold shower',xp:30,cat:'body',difficulty:'medium',has_timer:false,id:-4},
+  {name:'10 min run',xp:30,cat:'body',difficulty:'medium',has_timer:true,id:-5},
+  {name:'20 pushups',xp:20,cat:'body',difficulty:'easy',has_timer:false,id:-6},
+  {name:'50 squats',xp:25,cat:'body',difficulty:'easy',has_timer:false,id:-7},
+  {name:'15 min yoga or stretch',xp:25,cat:'body',difficulty:'easy',has_timer:true,id:-8},
+  {name:'No junk food today',xp:30,cat:'body',difficulty:'medium',has_timer:false,id:-9},
+  {name:'Cook a real meal',xp:35,cat:'body',difficulty:'medium',has_timer:false,id:-10},
+  {name:'Sleep before midnight',xp:20,cat:'body',difficulty:'easy',has_timer:false,id:-11},
+  {name:'Eat breakfast at home',xp:15,cat:'body',difficulty:'easy',has_timer:false,id:-12},
+  {name:'Read 20 min',xp:25,cat:'mind',difficulty:'easy',has_timer:true,id:-13},
+  {name:'No social media until 2pm',xp:35,cat:'mind',difficulty:'medium',has_timer:false,id:-14},
+  {name:'Journal 5 min',xp:20,cat:'mind',difficulty:'easy',has_timer:true,id:-15},
+  {name:'Meditate 10 min',xp:30,cat:'mind',difficulty:'medium',has_timer:true,id:-16},
+  {name:'Learn something new',xp:30,cat:'mind',difficulty:'medium',has_timer:false,id:-17},
+  {name:'No phone first hour',xp:35,cat:'mind',difficulty:'medium',has_timer:false,id:-18},
+  {name:'1 hour deep focus work',xp:50,cat:'mind',difficulty:'hard',has_timer:false,id:-19},
+  {name:'Write your goals down',xp:20,cat:'mind',difficulty:'easy',has_timer:false,id:-20},
+  {name:'Plan tomorrow tonight',xp:20,cat:'mind',difficulty:'easy',has_timer:false,id:-21},
+  {name:'Gratitude - 3 things',xp:15,cat:'mind',difficulty:'easy',has_timer:false,id:-22},
+  {name:'Spend 30 min on a skill',xp:40,cat:'mind',difficulty:'hard',has_timer:true,id:-23},
+  {name:'Tidy your space 10 min',xp:15,cat:'life',difficulty:'easy',has_timer:true,id:-24},
+  {name:'Reach out to someone',xp:20,cat:'life',difficulty:'easy',has_timer:false,id:-25},
+  {name:'No delivery today',xp:30,cat:'life',difficulty:'medium',has_timer:false,id:-26},
+  {name:'Declutter 5 items',xp:20,cat:'life',difficulty:'easy',has_timer:false,id:-27},
+  {name:'Go outside for fresh air',xp:15,cat:'life',difficulty:'easy',has_timer:false,id:-28},
+  {name:'Spend time with no screen',xp:25,cat:'life',difficulty:'medium',has_timer:false,id:-29},
+  {name:'Do something you enjoy',xp:15,cat:'life',difficulty:'easy',has_timer:false,id:-30},
+  {name:'Call or text a friend',xp:20,cat:'life',difficulty:'easy',has_timer:false,id:-31},
+];
+
+const REQUIRED_TASKS=[
+  {id:'req_water',  name:'Drink 2L of water',      xp:15,cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:'req_face',   name:'Wash face & brush teeth', xp:10,cat:'life',icon:'🪧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:'req_stretch',name:'5 min stretch or warmup', xp:15,cat:'body',icon:'💪',difficulty:'easy',has_timer:true, required:true,time_slot:'morning'},
+];
+
+const BONUS_QUESTS=[
+  {name:'100 Squats',desc:'Do 100 squats throughout the day.',xp:150},
+  {name:'No Social Media Before Lunch',desc:'Zero social media until after 12pm.',xp:100},
+  {name:'Drink 3L of Water',desc:'Stay hydrated all day.',xp:80},
+  {name:'No Sugar Today',desc:'Zero added sugar for the entire day.',xp:120},
+  {name:'Reconnect',desc:'Call someone you have been putting off.',xp:80},
+  {name:'Cook a Real Meal',desc:'No delivery. Cook from scratch.',xp:100},
+  {name:'1 Hour Deep Work',desc:'Deep focus, one full hour.',xp:150},
+  {name:'Early Sleep',desc:'In bed by 10pm.',xp:80},
+  {name:'Ice Cold Shower',desc:'Cold all the way. 3+ minutes.',xp:120},
+  {name:'Read 30 Pages',desc:'Read 30 pages of a book.',xp:80},
+  {name:'No Coffee Today',desc:'Face the day without caffeine.',xp:60},
+];
+
+const RANDOM_EVENTS=[
+  {text:'DOUBLE XP on your next task!',special:'double_xp',xp:0},
+  {text:'Do 30 jumping jacks RIGHT NOW for +40 XP',special:'instant',xp:40},
+  {text:'Take 3 deep breaths. Done? +20 XP',special:'instant',xp:20},
+  {text:'Drink a glass of water. +15 XP',special:'instant',xp:15},
+  {text:'Stand up and walk 5 minutes. +25 XP',special:'instant',xp:25},
+];
+
+let tasks=[],completions=[],lazyMode=false,timerIntervals={};
+let dailyRoll=null,todaySkips=0,doubleXP=false;
+
 // Auto-refresh every 50 min to stay logged in forever
 setInterval(async()=>{
   if(localStorage.getItem('sb_refresh'))await refreshToken();
@@ -591,22 +675,23 @@ function getDoneIds(){return completions.filter(c=>c.date===today).map(c=>String
 function getSkippedIds(){return JSON.parse(localStorage.getItem('grind_skipped_'+today)||'[]');}
 
 function getActiveTasks(){
+  const overrides=JSON.parse(localStorage.getItem('grind_task_overrides_'+today)||'{}');
+  const seed=parseInt(today.replace(/-/g,''))%1000;
   const xp=getTotalXP();const lvlIdx=LEVELS.indexOf(getLevel(xp))+1;
-  // Use built-in tasks + custom tasks from DB
-  const custom=tasks.filter(t=>t.id>0);
-  const combined=[...BUILT_IN.map((t,i)=>({...t,id:-(i+1)})),...custom];
-  let pool=combined.filter(t=>(t.min_level||1)<=lvlIdx);
-  if(lazyMode)pool=pool.filter(t=>t.xp<=10).slice(0,1);
-  // Daily selection: pick a subset based on day seed to avoid showing ALL tasks
-  const seed=parseInt(today.replace(/-/g,''))%100;
-  const maxPerSlot=lazyMode?1:3;
-  const result=[];
-  ['morning','day','evening'].forEach(slot=>{
-    const slotPool=pool.filter(t=>t.time_slot===slot);
-    const shuffled=[...slotPool].sort((a,b)=>((a.id+seed)%7)-((b.id+seed)%7));
-    result.push(...shuffled.slice(0,maxPerSlot));
+  const cats=['body','mind','life'];
+  const rotational=[];
+  cats.forEach((cat,ci)=>{
+    const pool=BUILT_IN.filter(b=>b.cat===cat);
+    const count=lvlIdx>=5?2:1;
+    const sorted=[...pool].sort((a,b)=>((Math.abs(a.id)+seed+ci*7)%pool.length)-((Math.abs(b.id)+seed+ci*7)%pool.length));
+    sorted.slice(0,count).forEach((t,i)=>{
+      const id='rot_'+cat+'_'+i+'_'+today;
+      const ov=overrides[id];
+      rotational.push({...(ov||t),id,rotational:true,time_slot:'day'});
+    });
   });
-  return result;
+  if(lazyMode)return REQUIRED_TASKS.slice(0,1);
+  return [...REQUIRED_TASKS,...rotational];
 }
 
 function renderStats(){

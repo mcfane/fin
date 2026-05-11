@@ -308,14 +308,12 @@ select.field option{background:var(--s2)}
   .switcher{top:auto;bottom:12px;left:50%;transform:translateX(-50%);box-shadow:0 4px 24px rgba(0,0,0,.5)}
 }
 
-.switcher{position:fixed;top:0;left:0;right:0;height:40px;background:var(--s1);border-bottom:1px solid var(--line2);z-index:8000;display:flex;align-items:center;justify-content:center;gap:4px}
+.switcher{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:8000;display:flex;align-items:center;gap:3px;background:var(--s2);border:1px solid var(--line2);border-radius:var(--rx);padding:3px}
 .sw-btn{padding:5px 18px;border-radius:var(--rx);font-size:11px;font-weight:800;text-decoration:none;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;transition:all .18s;border:1px solid transparent;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;background:transparent}
 .sw-btn:hover{color:var(--t2)}
 .sw-btn.active{background:var(--s4);color:var(--t1);border-color:var(--line2)}
-body{padding-top:40px}
 @media(max-width:700px){
-  .switcher{top:auto;bottom:0;border-top:1px solid var(--line2);border-bottom:none}
-  body{padding-top:0;padding-bottom:40px}
+  .switcher{top:auto;bottom:8px}
 }
 
 </style>
