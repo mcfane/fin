@@ -611,16 +611,25 @@ const BUILT_IN=[
 ];
 
 const REQUIRED_TASKS=[
-  // AFTER WAKING UP (no time, just sequence)
-  {id:-101,name:'Wash face',                  xp:10,cat:'life',icon:'🪧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
-  {id:-102,name:'Drink water before 1st smoke',xp:15,cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
-  {id:-103,name:'5 min stretch on floor',      xp:20,cat:'body',icon:'🧘',difficulty:'easy',has_timer:true, required:true,time_slot:'morning'},
-  // DURING THE DAY
-  {id:-104,name:'Every smoke — stand at window',xp:10,cat:'body',icon:'🚬',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  {id:-105,name:'Get up from desk once today',  xp:10,cat:'body',icon:'🚶',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  {id:-106,name:'Drink 2 glasses of water',     xp:10,cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  // EVENING
-  {id:-107,name:'Step outside for 5 min',       xp:25,cat:'body',icon:'🌿',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  {id:-101,name:'Wash face',           xp:5, cat:'life',icon:'💦',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-102,name:'Brush teeth',         xp:5, cat:'life',icon:'🪷',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-103,name:'Drink water',         xp:5, cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-104,name:'Stretch 2 min',       xp:10,cat:'body',icon:'🧘',difficulty:'easy',has_timer:true, required:true,time_slot:'morning'},
+  {id:-105,name:'Write one goal',      xp:5, cat:'mind',icon:'✏️',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-117,name:'Vitamins',            xp:10,cat:'body',icon:'💊',difficulty:'easy',has_timer:false,required:true,time_slot:'morning',note:'Omega-3 · B-100 · D3'},
+  {id:-106,name:'Smoke at window',     xp:10,cat:'life',icon:'🚬',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-107,name:'Stand up 2 min',      xp:5, cat:'body',icon:'🚶',difficulty:'easy',has_timer:true, required:true,time_slot:'day'},
+  {id:-108,name:'Drink water again',   xp:5, cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-109,name:'Eat before smoking',  xp:10,cat:'body',icon:'🍜',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-110,name:'Open window',         xp:5, cat:'body',icon:'🪟',difficulty:'easy',has_timer:true, required:true,time_slot:'day'},
+  {id:-111,name:'10 squats',           xp:10,cat:'body',icon:'💪',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-118,name:'Vitamins',            xp:5, cat:'body',icon:'💊',difficulty:'easy',has_timer:false,required:true,time_slot:'day',note:'Zinc — after food'},
+  {id:-112,name:'Go outside 5 min',   xp:20,cat:'body',icon:'🌃',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  {id:-113,name:'Tidy desk',          xp:5, cat:'life',icon:'🧹',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  {id:-114,name:'Phone down 20 min',  xp:10,cat:'mind',icon:'📵',difficulty:'easy',has_timer:true, required:true,time_slot:'evening'},
+  {id:-115,name:'Wash face',          xp:5, cat:'life',icon:'💦',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  {id:-116,name:'Brush teeth',        xp:5, cat:'life',icon:'🪷',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  {id:-119,name:'Vitamins',           xp:10,cat:'body',icon:'💊',difficulty:'easy',has_timer:false,required:true,time_slot:'evening',note:'Magnesium · GABA · L-theanine'},
 ];
 
 const BONUS_QUESTS=[
@@ -781,7 +790,7 @@ function makeTask(t,done,skipped){
     const vote='';
   return '<div class="task-item'+(done?' done':skipped?' skipped':'')+'" onclick="toggleTask(\''+id+'\','+t.xp+','+done+','+skipped+')">'
     +'<div class="task-check">'+(done?'\u2713':skipped?'\u2014':'')+'</div>'
-    +'<div class="task-info"><div class="task-name">'+t.name+'</div>'
+    +'<div class="task-info"><div class="task-name">'+t.name+(t.note?'<span style="font-size:10px;color:var(--t3);margin-left:5px">('+t.note+')</span>':'')+'</div>'
     +'<div class="task-meta"><span class="task-xp">+'+t.xp+'xp</span><span class="'+dc+'">'+(t.difficulty||'medium')+'</span>'+timer+skip+'</div>'
     +'</div></div>';
 }
