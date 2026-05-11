@@ -217,9 +217,19 @@ select.field option{background:var(--s2)}
 .achieve-item.epic{border-color:rgba(168,85,247,.4)!important}
 .achieve-item.legendary{border-color:rgba(245,158,11,.45)!important}
 
+
+.switcher{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:8000;display:flex;align-items:center;gap:3px;background:var(--s2);border:1px solid var(--line2);border-radius:var(--rx);padding:3px}
+.sw-btn{padding:5px 18px;border-radius:var(--rx);font-size:11px;font-weight:800;text-decoration:none;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;transition:all .18s;border:1px solid transparent;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;background:transparent}
+.sw-btn:hover{color:var(--t2)}
+.sw-btn.active{background:var(--s4);color:var(--t1);border-color:var(--line2)}
+@media(max-width:700px){.switcher{top:auto;bottom:8px}}
 </style>
 </head>
 <body>
+<div class="switcher">
+  <a href="index.html" class="sw-btn">💰 Finance</a>
+  <a href="tasks.html" class="sw-btn active">⚡ Grind</a>
+</div>
 <div id="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">FIN</div>
@@ -444,6 +454,9 @@ select.field option{background:var(--s2)}
 
 <script>
 const SB_AUTH='https://ftxgcggckwwjkxnlmfxs.supabase.co';
+const SB=SB_AUTH;
+function getH(){const t=localStorage.getItem('sb_token');return {'apikey':SB_AUTH,'Authorization':'Bearer '+(t||SB_AUTH),'Content-Type':'application/json','Prefer':'return=representation'};}
+const H=new Proxy({},{get(_,k){return getH()[k];}});
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0eGdjZ2dja3d3amt4bmxtZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzODcyNjAsImV4cCI6MjA5Mzk2MzI2MH0.6f3ygks9oIQp1vM43qt3Z7qf0T2Ouo74kLwjw2MZkO8';
 
 async function doLogin(){
@@ -622,9 +635,9 @@ setInterval(async()=>{
 },50*60*1000);
 
 // DB
-const dbGet=(t,q='')=>fetch(SB+'/rest/v1/'+t+'?'+q,{headers:H}).then(r=>r.ok?r.json():null).catch(()=>null);
-const dbIns=(t,d)=>fetch(SB+'/rest/v1/'+t,{method:'POST',headers:H,body:JSON.stringify(d)}).then(r=>{if(!r.ok)return r.text().then(e=>{console.error(t,r.status,e);return null;});return r.json();}).catch(()=>null);
-const dbDel=(t,id)=>fetch(SB+'/rest/v1/'+t+'?id=eq.'+id,{method:'DELETE',headers:H}).then(r=>r.ok).catch(()=>false);
+const dbGet=(t,q='')=>fetch(SB+'/rest/v1/'+t+'?'+q,{headers:getH()}).then(r=>r.ok?r.json():null).catch(()=>null);
+const dbIns=(t,d)=>fetch(SB+'/rest/v1/'+t,{method:'POST',headers:getH(),body:JSON.stringify(d)}).then(r=>{if(!r.ok)return r.text().then(e=>{console.error(t,r.status,e);return null;});return r.json();}).catch(()=>null);
+const dbDel=(t,id)=>fetch(SB+'/rest/v1/'+t+'?id=eq.'+id,{method:'DELETE',headers:getH()}).then(r=>r.ok).catch(()=>false);
 function setSS(ok,msg){document.getElementById('sync-dot').className='sync-dot'+(ok?'':' err');document.getElementById('sync-lbl').textContent=msg;}
 
 async function init(){
@@ -987,7 +1000,7 @@ async function getAI(){
   const streak=getStreak();const xp=getTotalXP();const lvl=getLevel(xp);
   const prompt='Discipline coach. Player: Level "'+lvl.name+'", '+xp+' XP, '+streak+'-day streak.\nGive 3 specific task suggestions for today. Max 8 words each. Bullets only. No intro.';
   try{
-    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
     const d=await res.json();el.textContent=d?.candidates?.[0]?.content?.parts?.[0]?.text||'No suggestions.';
   }catch(e){el.textContent='AI offline. Keep grinding anyway.';}
 }
