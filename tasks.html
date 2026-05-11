@@ -293,6 +293,7 @@ select.field option{background:var(--s2)}
     <div style="margin-left:auto;display:flex;gap:7px">
       <button class="lazy-btn" id="lazy-btn" onclick="toggleLazyMode()">&#x1F634; Lazy</button>
       <button class="lazy-btn" onclick="rerollDay()">&#x1F3B2; Reroll</button>
+      <button class="lazy-btn" onclick="endDay()" style="color:var(--up);border-color:rgba(26,212,114,.3)">&#x2705; End Day</button>
     </div>
   </div>
   <div class="col-inner">
@@ -349,21 +350,21 @@ select.field option{background:var(--s2)}
     </div>
     <div id="block-morning">
       <div class="block-hdr">
-        <div style="display:flex;align-items:center"><div class="block-dot" style="background:#f59e0b"></div><span class="block-title">&#x1F305; Morning</span></div>
+        <div style="display:flex;align-items:center"><div class="block-dot" style="background:#f59e0b"></div><span class="block-title">&#x1F4BB; Before the computer</span><span style="font-size:9px;color:var(--t3);font-weight:600;margin-left:6px">do these first</span></div>
         <button class="ca-btn" onclick="completeBlock('morning')">Complete all</button>
       </div>
       <div id="tasks-morning" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
     <div id="block-day">
       <div class="block-hdr">
-        <div style="display:flex;align-items:center"><div class="block-dot" style="background:#3b82f6"></div><span class="block-title">&#x2600;&#xFE0F; Day</span></div>
+        <div style="display:flex;align-items:center"><div class="block-dot" style="background:#3b82f6"></div><span class="block-title">&#x23F8;&#xFE0F; Break the loop</span><span style="font-size:9px;color:var(--t3);font-weight:600;margin-left:6px">interrupt the session</span></div>
         <button class="ca-btn" onclick="completeBlock('day')">Complete all</button>
       </div>
       <div id="tasks-day" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
     <div id="block-evening">
       <div class="block-hdr">
-        <div style="display:flex;align-items:center"><div class="block-dot" style="background:#a855f7"></div><span class="block-title">&#x1F319; Evening</span></div>
+        <div style="display:flex;align-items:center"><div class="block-dot" style="background:#a855f7"></div><span class="block-title">&#x1F319; Before sleep</span><span style="font-size:9px;color:var(--t3);font-weight:600;margin-left:6px">end differently</span></div>
         <button class="ca-btn" onclick="completeBlock('evening')">Complete all</button>
       </div>
       <div id="tasks-evening" style="display:flex;flex-direction:column;gap:6px"></div>
@@ -665,7 +666,9 @@ function setSS(ok,msg){document.getElementById('sync-dot').className='sync-dot'+
 
 async function init(){
   document.getElementById('today-label').textContent=greeting();
-  document.getElementById('today-date').textContent=new Date().toLocaleDateString('en',{weekday:'long',month:'long',day:'numeric'});
+  const _dn=parseInt(localStorage.getItem('grind_day_num')||'1');
+  const _cd=new Date().toLocaleDateString('en',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('today-date').textContent='Day '+_dn+' · '+_cd;
   setSS(false,'loading...');
   const [t,c]=await Promise.all([dbGet('grind_tasks','order=created_at.asc'),dbGet('grind_completions','order=date.desc')]);
   if(t===null||c===null){setSS(false,'error');return;}
@@ -750,7 +753,8 @@ function renderStats(){
   document.getElementById('xp-cur').textContent=xp;
   if(next){document.getElementById('xp-needed').textContent=next.min;document.getElementById('xp-fill').style.width=Math.round((xp-lvl.min)/(next.min-lvl.min)*100)+'%';}
   else{document.getElementById('xp-needed').textContent=xp;document.getElementById('xp-fill').style.width='100%';}
-  const streak=getStreak();const best=getBestStreak();
+  const streak=parseInt(localStorage.getItem('grind_manual_streak')||'0');
+  const best=parseInt(localStorage.getItem('grind_best_streak')||'0');
   document.getElementById('streak-num').textContent=streak;
   document.getElementById('streak-best').textContent='Best: '+best+' days';
   const mult=getMult(streak);const mb=document.getElementById('mult-badge');
@@ -1173,6 +1177,34 @@ function editPlayerName(){
     if(el)el.textContent=name.trim();
     showToast('Name updated!');
   }
+}
+async function endDay(){
+  const doneCount=getDoneIds().length;
+  const total=getActiveTasks().length;
+  const xpToday=getTodayXP();
+  if(!confirm('End your day?\n\nDone: '+doneCount+' of '+total+' tasks\nXP earned: +'+xpToday+'\n\nTasks will reset for next session.'))return;
+  if(typeof saveNote==='function')saveNote();
+  const now=new Date();
+  const calDate=now.toISOString().slice(0,10);
+  const dayNum=parseInt(localStorage.getItem('grind_day_num')||'0')+1;
+  localStorage.setItem('grind_day_num',String(dayNum));
+  if(doneCount>=1){
+    const lastSession=localStorage.getItem('grind_last_ended_session');
+    const streak=parseInt(localStorage.getItem('grind_manual_streak')||'0');
+    const lastDate=lastSession?new Date(lastSession.slice(0,10)):null;
+    const daysDiff=lastDate?Math.round((now-lastDate)/86400000):999;
+    const newStreak=daysDiff<=2?streak+1:1;
+    localStorage.setItem('grind_manual_streak',String(newStreak));
+    localStorage.setItem('grind_best_streak',String(Math.max(newStreak,parseInt(localStorage.getItem('grind_best_streak')||'0'))));
+    showToast('Day '+dayNum+' done! Streak: '+newStreak,3000);
+  } else {
+    localStorage.setItem('grind_manual_streak','0');
+    showToast('Day '+dayNum+' ended.',2500);
+  }
+  localStorage.setItem('grind_last_ended_session',sessionKey);
+  const newSession=calDate+'_s'+now.getHours()+'h'+now.getMinutes()+'m'+now.getSeconds();
+  localStorage.setItem('grind_session_key',newSession);
+  setTimeout(()=>window.location.reload(),2000);
 }
 function showToast(msg,dur=1600){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
 </script>
