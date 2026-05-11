@@ -349,22 +349,34 @@ select.field option{background:var(--s2)}
     </div>
     <div id="block-morning">
       <div class="block-hdr">
-        <div style="display:flex;align-items:center"><div class="block-dot" style="background:#f59e0b"></div><span class="block-title">&#x1F305; Morning</span></div>
-        <button class="ca-btn" onclick="completeBlock('morning')">Complete all</button>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="block-dot" style="background:#f59e0b"></div>
+          <span class="block-title">&#x1F4BB; Before the computer</span>
+          <span style="font-size:9px;color:var(--t3);font-weight:600">do these first</span>
+        </div>
+        <button class="ca-btn" onclick="completeBlock('morning')">Done all</button>
       </div>
       <div id="tasks-morning" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
     <div id="block-day">
       <div class="block-hdr">
-        <div style="display:flex;align-items:center"><div class="block-dot" style="background:#3b82f6"></div><span class="block-title">&#x2600;&#xFE0F; Day</span></div>
-        <button class="ca-btn" onclick="completeBlock('day')">Complete all</button>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="block-dot" style="background:#3b82f6"></div>
+          <span class="block-title">&#x23F8;&#xFE0F; Break the loop</span>
+          <span style="font-size:9px;color:var(--t3);font-weight:600">interrupt the session</span>
+        </div>
+        <button class="ca-btn" onclick="completeBlock('day')">Done all</button>
       </div>
       <div id="tasks-day" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
     <div id="block-evening">
       <div class="block-hdr">
-        <div style="display:flex;align-items:center"><div class="block-dot" style="background:#a855f7"></div><span class="block-title">&#x1F319; Evening</span></div>
-        <button class="ca-btn" onclick="completeBlock('evening')">Complete all</button>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="block-dot" style="background:#a855f7"></div>
+          <span class="block-title">&#x1F319; Before sleep</span>
+          <span style="font-size:9px;color:var(--t3);font-weight:600">end differently</span>
+        </div>
+        <button class="ca-btn" onclick="completeBlock('evening')">Done all</button>
       </div>
       <div id="tasks-evening" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
@@ -592,16 +604,24 @@ const BUILT_IN=[
 ];
 
 const REQUIRED_TASKS=[
-  // BEFORE COMPUTER (do these before sitting down)
-  {id:-101,name:'Wash face & drink water',     xp:15,cat:'life',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
-  {id:-102,name:'5 min stretch before sitting',xp:20,cat:'body',icon:'🧘',difficulty:'easy',has_timer:true, required:true,time_slot:'morning'},
-  // BREAK FROM COMPUTER (interrupt the loop)
-  {id:-103,name:'Stand up & move for 5 min',   xp:15,cat:'body',icon:'🚶',difficulty:'easy',has_timer:true, required:true,time_slot:'day'},
-  {id:-104,name:'Every smoke at the window',    xp:20,cat:'life',icon:'🚬',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  {id:-105,name:'Eat something real today',     xp:15,cat:'body',icon:'🍽️',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
-  // BEFORE SLEEP (end the loop differently)
-  {id:-107,name:'Go outside before sleep',      xp:30,cat:'body',icon:'🌃',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
-  {id:-108,name:'Put phone down 20 min',        xp:20,cat:'mind',icon:'📵',difficulty:'easy',has_timer:true, required:true,time_slot:'evening'},
+  // BEFORE COMPUTER
+  {id:-101,name:'Wash face',                    xp:5, cat:'life',icon:'💦',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-102,name:'Drink a glass of water',        xp:5, cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-103,name:'Brush teeth',                   xp:5, cat:'life',icon:'🪷',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  {id:-104,name:'Stretch 2 minutes',             xp:10,cat:'body',icon:'🧘',difficulty:'easy',has_timer:true, required:true,time_slot:'morning'},
+  {id:-105,name:'Write one thing to do today',   xp:5, cat:'mind',icon:'✏️',difficulty:'easy',has_timer:false,required:true,time_slot:'morning'},
+  // BREAK THE LOOP
+  {id:-106,name:'Every smoke at the window',     xp:10,cat:'life',icon:'🚬',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-107,name:'Stand up & move 2 min',         xp:5, cat:'body',icon:'🚶',difficulty:'easy',has_timer:true, required:true,time_slot:'day'},
+  {id:-108,name:'Drink water again',             xp:5, cat:'body',icon:'💧',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-109,name:'Eat something before you smoke',xp:10,cat:'body',icon:'🍜',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  {id:-110,name:'Open window 10 min',            xp:5, cat:'body',icon:'🪟',difficulty:'easy',has_timer:true, required:true,time_slot:'day'},
+  {id:-111,name:'10 squats right now',           xp:10,cat:'body',icon:'💪',difficulty:'easy',has_timer:false,required:true,time_slot:'day'},
+  // BEFORE SLEEP
+  {id:-112,name:'Step outside for 5 min',        xp:20,cat:'body',icon:'🌃',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  {id:-113,name:'Tidy desk before sleep',        xp:5, cat:'life',icon:'🧹',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
+  {id:-114,name:'Phone down 20 min before bed',  xp:10,cat:'mind',icon:'📵',difficulty:'easy',has_timer:true, required:true,time_slot:'evening'},
+  {id:-115,name:'Wash face before sleep',        xp:5, cat:'life',icon:'💦',difficulty:'easy',has_timer:false,required:true,time_slot:'evening'},
 ];
 
 const BONUS_QUESTS=[
