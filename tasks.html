@@ -293,6 +293,7 @@ select.field option{background:var(--s2)}
     <div style="margin-left:auto;display:flex;gap:7px">
       <button class="lazy-btn" id="lazy-btn" onclick="toggleLazyMode()">&#x1F634; Lazy</button>
       <button class="lazy-btn" onclick="rerollDay()">&#x1F3B2; Reroll</button>
+      <button class="lazy-btn" onclick="endDay()" style="color:var(--up);border-color:rgba(26,212,114,.3)">&#x2705; End Day</button>
     </div>
   </div>
   <div class="col-inner">
@@ -557,7 +558,18 @@ setInterval(async()=>{
 },50*60*1000);
 
 const GEMINI_KEY='AIzaSyC0NVD4hjX0TJ67-C7hZXqeKJSisRq95Dc';
-const today=new Date().toISOString().slice(0,10);
+// Use session-based day instead of calendar date
+// so user controls when day ends
+function getSessionDay(){
+  // Day is defined by user pressing End Day, not by calendar
+  // First ever session uses today's date as starting key
+  if(!localStorage.getItem('grind_session_override')){
+    const firstDay=new Date().toISOString().slice(0,10);
+    localStorage.setItem('grind_session_override', firstDay);
+  }
+  return localStorage.getItem('grind_session_override');
+}
+const today=getSessionDay();
 const MAX_SKIPS=3;
 
 const LEVELS=[
@@ -657,7 +669,9 @@ function setSS(ok,msg){document.getElementById('sync-dot').className='sync-dot'+
 
 async function init(){
   document.getElementById('today-label').textContent=greeting();
-  document.getElementById('today-date').textContent=new Date().toLocaleDateString('en',{weekday:'long',month:'long',day:'numeric'});
+  const _dayNum=parseInt(localStorage.getItem('grind_day_num')||'1');
+  const _calDate=new Date().toLocaleDateString('en',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('today-date').textContent='Day '+_dayNum+' · '+_calDate;
   setSS(false,'loading...');
   const [t,c]=await Promise.all([dbGet('grind_tasks','order=created_at.asc'),dbGet('grind_completions','order=date.desc')]);
   if(t===null||c===null){setSS(false,'error');return;}
@@ -742,7 +756,8 @@ function renderStats(){
   document.getElementById('xp-cur').textContent=xp;
   if(next){document.getElementById('xp-needed').textContent=next.min;document.getElementById('xp-fill').style.width=Math.round((xp-lvl.min)/(next.min-lvl.min)*100)+'%';}
   else{document.getElementById('xp-needed').textContent=xp;document.getElementById('xp-fill').style.width='100%';}
-  const streak=getStreak();const best=getBestStreak();
+  const streak=parseInt(localStorage.getItem('grind_manual_streak')||'0');
+  const best=parseInt(localStorage.getItem('grind_best_streak')||'0');
   document.getElementById('streak-num').textContent=streak;
   document.getElementById('streak-best').textContent='Best: '+best+' days';
   const mult=getMult(streak);const mb=document.getElementById('mult-badge');
@@ -1165,6 +1180,35 @@ function editPlayerName(){
     if(el)el.textContent=name.trim();
     showToast('Name updated!');
   }
+}
+async function endDay(){
+  const doneCount=getDoneIds().length;
+  const total=getActiveTasks().length;
+  const xpToday=getTodayXP();
+  if(!confirm('End your day?\n\nDone: '+doneCount+' of '+total+' tasks\nXP earned: +'+xpToday+'\n\nTasks will reset for next session.'))return;
+  saveNote();
+  const now=new Date();
+  const calDate=now.toISOString().slice(0,10);
+  const dayNum=parseInt(localStorage.getItem('grind_day_num')||'0')+1;
+  localStorage.setItem('grind_day_num',dayNum);
+  localStorage.setItem('grind_session_date_'+today,calDate);
+  if(doneCount>=1){
+    const lastSession=localStorage.getItem('grind_last_ended_session');
+    const streak=parseInt(localStorage.getItem('grind_manual_streak')||'0');
+    const lastDate=lastSession?new Date(lastSession.slice(0,10)):null;
+    const daysDiff=lastDate?Math.round((now-lastDate)/86400000):999;
+    const newStreak=daysDiff<=2?streak+1:1;
+    localStorage.setItem('grind_manual_streak',String(newStreak));
+    localStorage.setItem('grind_best_streak',String(Math.max(newStreak,parseInt(localStorage.getItem('grind_best_streak')||'0'))));
+    showToast('Day '+dayNum+' done! Streak: '+newStreak,3000);
+  } else {
+    localStorage.setItem('grind_manual_streak','0');
+    showToast('Day '+dayNum+' ended. Do more tomorrow.',2500);
+  }
+  localStorage.setItem('grind_last_ended_session',today);
+  const newSession=calDate+'_s'+now.getHours()+'h'+now.getMinutes()+'m'+now.getSeconds();
+  localStorage.setItem('grind_session_override',newSession);
+  setTimeout(()=>window.location.reload(),2000);
 }
 function showToast(msg,dur=1600){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
 </script>
