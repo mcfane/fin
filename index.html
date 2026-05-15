@@ -300,21 +300,11 @@ select.field option{background:var(--s2)}
 
 
 /* ── SWITCHER ──────────────────────────────────────────── */
-.switcher{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9000;display:flex;align-items:center;gap:2px;background:var(--s2);border:1px solid var(--line2);border-radius:40px;padding:3px}
-.sw-btn{padding:5px 16px;border-radius:40px;font-size:11px;font-weight:800;text-decoration:none;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;transition:all .18s;border:none;background:transparent;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap}
-.sw-btn:hover{color:var(--t2)}
-.sw-btn.active{background:var(--s4);color:var(--t1);border:1px solid var(--line3)}
 @media(max-width:700px){
-  .switcher{top:auto;bottom:12px;left:50%;transform:translateX(-50%);box-shadow:0 4px 24px rgba(0,0,0,.5)}
-}
+  }
 
-.switcher{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:8000;display:flex;align-items:center;gap:3px;background:var(--s2);border:1px solid var(--line2);border-radius:var(--rx);padding:3px}
-.sw-btn{padding:5px 18px;border-radius:var(--rx);font-size:11px;font-weight:800;text-decoration:none;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;transition:all .18s;border:1px solid transparent;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;background:transparent}
-.sw-btn:hover{color:var(--t2)}
-.sw-btn.active{background:var(--s4);color:var(--t1);border-color:var(--line2)}
 @media(max-width:700px){
-  .switcher{top:auto;bottom:8px}
-}
+  }
 
 </style>
 </head>
@@ -323,10 +313,7 @@ select.field option{background:var(--s2)}
 <!-- DESKTOP -->
 
 
-<div class="switcher">
-  <a href="index.html" class="sw-btn active">💰 Finance</a>
-  <a href="tasks.html" class="sw-btn">⚡ Grind</a>
-</div>
+
 <div id="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">FIN</div>
@@ -1064,21 +1051,36 @@ function toggleCatOverview(){
   localStorage.setItem('fin_catov_hidden',isHidden?'0':'1');
 }
 async function init(){
-  await fetchRates();
+  // Show cached data instantly
+  budgets=JSON.parse(localStorage.getItem('fin_b')||'[]');
+  recurring=JSON.parse(localStorage.getItem('fin_rec')||'[]');
+  const cachedTxs=localStorage.getItem('fin_cache_txs');
+  const cachedCats=localStorage.getItem('fin_cache_cats');
+  if(cachedTxs){
+    try{txs=JSON.parse(cachedTxs);}catch(e){}
+  }
+  if(cachedCats){
+    try{cats=JSON.parse(cachedCats);}catch(e){}
+  }
+  if(!cats.length)cats=[{id:1,name:'Work'},{id:2,name:'Food'},{id:3,name:'Transport'},{id:4,name:'Other'}];
   buildDateStrip('date-strip','tx-date');buildDateStrip('m-date-strip','m-tx-date');
+  ['goal-deadline','m-goal-deadline','rem-date','m-rem-date'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=today;});
+  document.getElementById('loading-tx').style.display='none';
+  document.getElementById('tx-list').style.display='flex';
+  renderAll();
+  restorePanels();
+  if(localStorage.getItem('fin_catov_hidden')=='1'){const els=['cat-overview','m-cat-overview'];els.forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});const btn=document.getElementById('cat-ov-toggle');if(btn)btn.textContent='Show';}
+  // Fetch fresh data in background
+  setSyncStatus(false,'syncing...');
   try{
+    await fetchRates();
     [txs,rems,cats,subcats,goals]=await Promise.all([dbGet('transactions','date'),dbGet('reminders'),dbGet('categories','name'),dbGet('subcategories','category'),dbGet('goals')]);
-    budgets=JSON.parse(localStorage.getItem('fin_b')||'[]');
-    recurring=JSON.parse(localStorage.getItem('fin_rec')||'[]');
     if(!cats.length)cats=[{id:1,name:'Work'},{id:2,name:'Food'},{id:3,name:'Transport'},{id:4,name:'Other'}];
-    ['goal-deadline','m-goal-deadline','rem-date','m-rem-date'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=today;});
+    localStorage.setItem('fin_cache_txs',JSON.stringify(txs));
+    localStorage.setItem('fin_cache_cats',JSON.stringify(cats));
     setSyncStatus(true,'synced');
-    document.getElementById('loading-tx').style.display='none';
-    document.getElementById('tx-list').style.display='flex';
     renderAll();
-    restorePanels();
-    if(localStorage.getItem('fin_catov_hidden')=='1'){const els=['cat-overview','m-cat-overview'];els.forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});const btn=document.getElementById('cat-ov-toggle');if(btn)btn.textContent='Show';}
-  }catch(e){setSyncStatus(false,'error');document.getElementById('loading-tx').innerHTML='<div style="color:#f03d5f;text-align:center;padding:20px">Connection error</div>';}
+  }catch(e){setSyncStatus(false,'error');}
 }
 
 const SB_AUTH='https://ftxgcggckwwjkxnlmfxs.supabase.co';
