@@ -660,17 +660,26 @@ const today=new Date().toISOString().split('T')[0];
 let fxRates={USD:1,AMD:1,RUB:1,SOL:1};
 async function fetchRates(){
   try{
-    const [r1,r2]=await Promise.all([
-      fetch('https://api.frankfurter.app/latest?from=USD&to=AMD,RUB'),
-      fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd')
-    ]);
+    const r1=await fetch('https://api.frankfurter.app/latest?from=USD&to=AMD,RUB');
     const d1=await r1.json();
-    const d2=await r2.json();
     fxRates.AMD=d1.rates.AMD||390;
     fxRates.RUB=d1.rates.RUB||90;
-    const solUsd=d2?.solana?.usd||150;
-    fxRates.SOL=solUsd; // 1 SOL = X USD, so 1 USD = 1/solUsd SOL
-  }catch(e){fxRates={USD:1,AMD:390,RUB:90,SOL:150};}
+  }catch(e){fxRates.AMD=390;fxRates.RUB=90;}
+  // Fetch SOL price separately with fallback
+  try{
+    const r2=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd&x_cg_demo_api_key=');
+    const d2=await r2.json();
+    if(d2?.solana?.usd)fxRates.SOL=d2.solana.usd;
+    else throw new Error('no sol');
+  }catch(e){
+    // Fallback: try alternative endpoint
+    try{
+      const r3=await fetch('https://price.jup.ag/v6/price?ids=SOL');
+      const d3=await r3.json();
+      const solPrice=d3?.data?.SOL?.price;
+      if(solPrice)fxRates.SOL=solPrice;
+    }catch(e2){fxRates.SOL=150;}
+  }
 }
 function toUSD(amount,currency){if(currency==='SOL')return parseFloat((amount*fxRates.SOL).toFixed(4));return parseFloat((amount/fxRates[currency]).toFixed(4));}
 function fmtOrig(amount,currency){
@@ -695,8 +704,13 @@ function togglePanel(bodyId,arrowId){
   const body=document.getElementById(bodyId);const arrow=document.getElementById(arrowId);if(!body||!arrow)return;
   body.classList.toggle('hidden');arrow.classList.toggle('open');
   const hidden=body.classList.contains('hidden');
-  const key='fin_panel_'+bodyId;
-  localStorage.setItem(key,hidden?'0':'1');
+  localStorage.setItem('fin_panel_'+bodyId,hidden?'0':'1');
+  // Re-render content when opening so it's never empty
+  if(!hidden){
+    if(bodyId==='mc-body'||bodyId==='m-mc-body')renderMonthCompare();
+    if(bodyId==='goals-body')renderGoals();
+    if(bodyId==='ins-body'||bodyId==='m-ins-body')renderInsights();
+  }
 }
 function restorePanels(){
   document.querySelectorAll('.panel-body').forEach(body=>{
@@ -708,6 +722,10 @@ function restorePanels(){
       if(panel){const arrow=panel.querySelector('.panel-toggle');if(arrow)arrow.classList.remove('open');}
     }
   });
+  // Ensure open panels have content rendered
+  if(!document.getElementById('mc-body').classList.contains('hidden'))renderMonthCompare();
+  if(!document.getElementById('goals-body').classList.contains('hidden'))renderGoals();
+  if(!document.getElementById('ins-body').classList.contains('hidden'))renderInsights();
 }
 
 function buildDateStrip(sid,iid){
