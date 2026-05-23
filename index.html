@@ -354,9 +354,10 @@ select.field option{background:var(--s2)}
         </div>
         <input class="field" type="number" id="amount" placeholder="Amount" min="0" step="0.01" onkeydown="if(event.key==='Enter')addTx()">
         <div class="cur-seg">
-          <button class="cur-btn on" id="cur-usd" onclick="setCur('USD',this)">USD $</button>
-          <button class="cur-btn" id="cur-amd" onclick="setCur('AMD',this)">AMD ֏</button>
-          <button class="cur-btn" id="cur-rub" onclick="setCur('RUB',this)">RUB ₽</button>
+          <button class="cur-btn on" id="cur-usd" onclick="setCur('USD',this)">$</button>
+          <button class="cur-btn" id="cur-amd" onclick="setCur('AMD',this)">֏</button>
+          <button class="cur-btn" id="cur-rub" onclick="setCur('RUB',this)">₽</button>
+          <button class="cur-btn" id="cur-sol" onclick="setCur('SOL',this)">◎</button>
         </div>
         <select class="field" id="cat-sel" onchange="updateSubcatSel('cat-sel','subcat-sel')"></select>
         <select class="field" id="subcat-sel"><option value="">No subcategory</option></select>
@@ -587,9 +588,10 @@ select.field option{background:var(--s2)}
       </div>
       <input class="field" type="number" id="m-amount" placeholder="Amount" min="0" step="0.01" inputmode="decimal" onkeydown="if(event.key==='Enter')mAddTx()">
       <div class="cur-seg">
-        <button class="cur-btn on" id="m-cur-usd" onclick="setCur('USD',this,true)">USD $</button>
-        <button class="cur-btn" id="m-cur-amd" onclick="setCur('AMD',this,true)">AMD ֏</button>
-        <button class="cur-btn" id="m-cur-rub" onclick="setCur('RUB',this,true)">RUB ₽</button>
+        <button class="cur-btn on" id="m-cur-usd" onclick="setCur('USD',this,true)">$</button>
+        <button class="cur-btn" id="m-cur-amd" onclick="setCur('AMD',this,true)">֏</button>
+        <button class="cur-btn" id="m-cur-rub" onclick="setCur('RUB',this,true)">₽</button>
+        <button class="cur-btn" id="m-cur-sol" onclick="setCur('SOL',this,true)">◎</button>
       </div>
       <select class="field" id="m-cat-sel" onchange="updateSubcatSel('m-cat-sel','m-subcat-sel')"></select>
       <select class="field" id="m-subcat-sel"><option value="">No subcategory</option></select>
@@ -655,19 +657,25 @@ let myChart=null,myChartM=null;
 const today=new Date().toISOString().split('T')[0];
 
 
-let fxRates={USD:1,AMD:1,RUB:1};
+let fxRates={USD:1,AMD:1,RUB:1,SOL:1};
 async function fetchRates(){
   try{
-    const r=await fetch('https://api.frankfurter.app/latest?from=USD&to=AMD,RUB');
-    const d=await r.json();
-    fxRates.AMD=d.rates.AMD||390;
-    fxRates.RUB=d.rates.RUB||90;
-  }catch(e){fxRates={USD:1,AMD:390,RUB:90};}
+    const [r1,r2]=await Promise.all([
+      fetch('https://api.frankfurter.app/latest?from=USD&to=AMD,RUB'),
+      fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd')
+    ]);
+    const d1=await r1.json();
+    const d2=await r2.json();
+    fxRates.AMD=d1.rates.AMD||390;
+    fxRates.RUB=d1.rates.RUB||90;
+    const solUsd=d2?.solana?.usd||150;
+    fxRates.SOL=solUsd; // 1 SOL = X USD, so 1 USD = 1/solUsd SOL
+  }catch(e){fxRates={USD:1,AMD:390,RUB:90,SOL:150};}
 }
-function toUSD(amount,currency){return parseFloat((amount/fxRates[currency]).toFixed(4));}
+function toUSD(amount,currency){if(currency==='SOL')return parseFloat((amount*fxRates.SOL).toFixed(4));return parseFloat((amount/fxRates[currency]).toFixed(4));}
 function fmtOrig(amount,currency){
   if(currency==='USD')return null;
-  const sym={AMD:'֏',RUB:'₽'};
+  const sym={AMD:'֏',RUB:'₽',SOL:'◎'};
   return sym[currency]+parseFloat(amount).toLocaleString('en',{maximumFractionDigits:0});
 }
 
@@ -1056,17 +1064,21 @@ async function init(){
   recurring=JSON.parse(localStorage.getItem('fin_rec')||'[]');
   const cachedTxs=localStorage.getItem('fin_cache_txs');
   const cachedCats=localStorage.getItem('fin_cache_cats');
-  if(cachedTxs){
-    try{txs=JSON.parse(cachedTxs);}catch(e){}
-  }
-  if(cachedCats){
-    try{cats=JSON.parse(cachedCats);}catch(e){}
-  }
+  const cachedSubcats=localStorage.getItem('fin_cache_subcats');
+  const cachedRems=localStorage.getItem('fin_cache_rems');
+  const cachedGoals=localStorage.getItem('fin_cache_goals');
+  if(cachedTxs){try{txs=JSON.parse(cachedTxs);}catch(e){}}
+  if(cachedCats){try{cats=JSON.parse(cachedCats);}catch(e){}}
+  if(cachedSubcats){try{subcats=JSON.parse(cachedSubcats);}catch(e){}}
+  if(cachedRems){try{rems=JSON.parse(cachedRems);}catch(e){}}
+  if(cachedGoals){try{goals=JSON.parse(cachedGoals);}catch(e){}}
   if(!cats.length)cats=[{id:1,name:'Work'},{id:2,name:'Food'},{id:3,name:'Transport'},{id:4,name:'Other'}];
   buildDateStrip('date-strip','tx-date');buildDateStrip('m-date-strip','m-tx-date');
   ['goal-deadline','m-goal-deadline','rem-date','m-rem-date'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=today;});
-  document.getElementById('loading-tx').style.display='none';
-  document.getElementById('tx-list').style.display='flex';
+  if(txs.length||cats.length){
+    document.getElementById('loading-tx').style.display='none';
+    document.getElementById('tx-list').style.display='flex';
+  }
   renderAll();
   restorePanels();
   if(localStorage.getItem('fin_catov_hidden')=='1'){const els=['cat-overview','m-cat-overview'];els.forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});const btn=document.getElementById('cat-ov-toggle');if(btn)btn.textContent='Show';}
@@ -1078,7 +1090,12 @@ async function init(){
     if(!cats.length)cats=[{id:1,name:'Work'},{id:2,name:'Food'},{id:3,name:'Transport'},{id:4,name:'Other'}];
     localStorage.setItem('fin_cache_txs',JSON.stringify(txs));
     localStorage.setItem('fin_cache_cats',JSON.stringify(cats));
+    localStorage.setItem('fin_cache_subcats',JSON.stringify(subcats));
+    localStorage.setItem('fin_cache_rems',JSON.stringify(rems));
+    localStorage.setItem('fin_cache_goals',JSON.stringify(goals));
     setSyncStatus(true,'synced');
+    document.getElementById('loading-tx').style.display='none';
+    document.getElementById('tx-list').style.display='flex';
     renderAll();
   }catch(e){setSyncStatus(false,'error');}
 }
