@@ -76,7 +76,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-he
 .cat-ov-fill{height:100%;border-radius:1px;transition:width .6s cubic-bezier(.4,0,.2,1)}
 
 /* COLLAPSIBLE PANELS */
-.panel{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.panel{background:var(--s1);border:1px solid var(--line);border-radius:var(--r)}
 .panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;user-select:none;transition:background .15s}
 .panel-hdr:hover{background:var(--s2)}
 .panel-hdr-left{display:flex;align-items:center;gap:8px}
@@ -84,7 +84,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--t1);min-he
 .panel-value{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--t3)}
 .panel-toggle{font-size:13px;color:var(--t3);transition:transform .2s;flex-shrink:0}
 .panel-toggle.open{transform:rotate(180deg)}
-.panel-body{padding:14px 16px;border-top:1px solid var(--line)}
+.panel-body{padding:14px 16px;border-top:1px solid var(--line);min-height:40px}
 .panel-body.hidden{display:none}
 
 /* MONTH COMPARE inside panel */
