@@ -306,6 +306,16 @@ select.field option{background:var(--s2)}
 @media(max-width:700px){
   }
 
+
+.cat-summary{background:var(--s1);border:1px solid var(--line2);border-radius:var(--r);padding:16px 20px;margin-bottom:12px;display:none}
+.cat-summary.visible{display:block}
+.cat-summary-name{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:8px}
+.cat-summary-net{font-size:36px;font-weight:900;font-family:'JetBrains Mono',monospace;letter-spacing:-0.02em;line-height:1;margin-bottom:14px}
+.cat-summary-bars{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cat-summary-bar-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:5px}
+.cat-summary-bar-track{height:6px;background:var(--s4);border-radius:3px;overflow:hidden}
+.cat-summary-bar-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.cat-summary-bar-val{font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-top:5px}
 </style>
 </head>
 <body>
@@ -498,6 +508,28 @@ select.field option{background:var(--s2)}
       </div>
 
       <!-- BARS -->
+            <div style="margin-bottom:10px">
+        <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:7px">Filter by category</div>
+        <div id="cat-filter-btns" style="display:flex;flex-wrap:wrap;gap:5px">
+          <button onclick="setCatFilter(null,this)" class="cat-filter-btn on" style="padding:4px 12px;border-radius:var(--rx);border:1px solid var(--line2);background:var(--s3);color:var(--t1);font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif">All</button>
+        </div>
+      </div>
+      <div class="cat-summary" id="cat-summary">
+        <div class="cat-summary-name" id="cat-summary-name"></div>
+        <div class="cat-summary-net" id="cat-summary-net"></div>
+        <div class="cat-summary-bars">
+          <div>
+            <div class="cat-summary-bar-label" style="color:var(--up)">Income</div>
+            <div class="cat-summary-bar-track"><div class="cat-summary-bar-fill" id="cat-inc-fill" style="background:var(--up)"></div></div>
+            <div class="cat-summary-bar-val" id="cat-inc-val" style="color:var(--up)"></div>
+          </div>
+          <div>
+            <div class="cat-summary-bar-label" style="color:var(--dn)">Expenses</div>
+            <div class="cat-summary-bar-track"><div class="cat-summary-bar-fill" id="cat-exp-fill" style="background:var(--dn)"></div></div>
+            <div class="cat-summary-bar-val" id="cat-exp-val" style="color:var(--dn)"></div>
+          </div>
+        </div>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
         <div><div class="sec">Where it comes from</div><div class="bar-block" id="income-bars"><div class="empty" style="padding:4px 0">No income yet</div></div></div>
         <div><div class="sec">Where it goes</div><div class="bar-block" id="expense-bars"><div class="empty" style="padding:4px 0">No expenses yet</div></div></div>
@@ -929,15 +961,65 @@ function renderInsights(){
   ['insights','m-insights'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=h;});
 }
 
+let activeCatBarFilter=null;
+function setCatFilter(cat,btn){
+  activeCatBarFilter=cat;
+  document.querySelectorAll('.cat-filter-btn').forEach(b=>{
+    b.style.background='transparent';b.style.color='var(--t3)';b.style.borderColor='var(--line2)';
+    b.classList.remove('on');
+  });
+  btn.style.background='var(--s3)';btn.style.color='var(--t1)';btn.style.borderColor='var(--line3)';
+  btn.classList.add('on');
+  // Update summary widget
+  const summary=document.getElementById('cat-summary');
+  if(cat){
+    const catTxs=txs.filter(t=>t.category===cat);
+    const inc=catTxs.filter(t=>t.type==='income').reduce((s,t)=>s+parseFloat(t.amount),0);
+    const exp=catTxs.filter(t=>t.type!=='income').reduce((s,t)=>s+parseFloat(t.amount),0);
+    const net=inc-exp;
+    const isPos=net>=0;
+    const max=Math.max(inc,exp,1);
+    document.getElementById('cat-summary-name').textContent=cat;
+    document.getElementById('cat-summary-net').textContent=(isPos?'+':'')+'\$'+Math.abs(net).toFixed(0);
+    document.getElementById('cat-summary-net').style.color=isPos?'var(--up)':'var(--dn)';
+    document.getElementById('cat-inc-fill').style.width=Math.round(inc/max*100)+'%';
+    document.getElementById('cat-exp-fill').style.width=Math.round(exp/max*100)+'%';
+    document.getElementById('cat-inc-val').textContent='+\$'+inc.toFixed(0);
+    document.getElementById('cat-exp-val').textContent='-\$'+exp.toFixed(0);
+    summary.classList.add('visible');
+    // Border color based on net
+    summary.style.borderColor=isPos?'rgba(26,212,114,0.3)':'rgba(240,61,95,0.3)';
+    summary.style.background=isPos?'rgba(26,212,114,0.04)':'rgba(240,61,95,0.04)';
+  } else {
+    summary.classList.remove('visible');
+  }
+  renderBars();
+}
 function renderBars(){
   const incMap={},expMap={};
-  txs.forEach(t=>{const a=parseFloat(t.amount);const map=t.type==='income'?incMap:expMap;if(!map[t.category])map[t.category]={total:0,subs:{}};map[t.category].total+=a;const sub=t.subcategory||'General';map[t.category].subs[sub]=(map[t.category].subs[sub]||0)+a;});
+  const filteredTxs=activeCatBarFilter?txs.filter(t=>t.category===activeCatBarFilter):txs;
+  filteredTxs.forEach(t=>{const a=parseFloat(t.amount);const map=t.type==='income'?incMap:expMap;if(!map[t.category])map[t.category]={total:0,subs:{}};map[t.category].total+=a;const sub=t.subcategory||'General';map[t.category].subs[sub]=(map[t.category].subs[sub]||0)+a;});
+  // Update category filter buttons
+  const cfb=document.getElementById('cat-filter-btns');
+  if(cfb){
+    const allCats=[...new Set(txs.map(t=>t.category))].sort();
+    const existing=new Set([...cfb.querySelectorAll('.cat-filter-btn')].map(b=>b.dataset.cat||'all'));
+    allCats.forEach(cat=>{
+      if(!existing.has(cat)){
+        const btn=document.createElement('button');
+        btn.className='cat-filter-btn';btn.dataset.cat=cat;btn.textContent=cat;
+        btn.onclick=function(){setCatFilter(cat,this);};
+        btn.style.cssText='padding:4px 12px;border-radius:var(--rx);border:1px solid var(--line2);background:transparent;color:var(--t3);font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;transition:all .15s';
+        cfb.appendChild(btn);
+      }
+    });
+  }
   const makeGroup=(map,sign,isExp)=>{
     const maxT=Math.max(...Object.values(map).map(v=>v.total),1);
     return Object.entries(map).sort((a,b)=>b[1].total-a[1].total).map(([cat,data])=>{
       const pct=Math.round(data.total/maxT*100);
-      const col=isExp?'var(--dn)':catColor(cat);
-      const subCol=isExp?'rgba(240,61,95,0.55)':col;
+      const col=isExp?'var(--dn)':'var(--up)';
+      const subCol=isExp?'rgba(240,61,95,0.55)':'rgba(26,212,114,0.6)';
       const maxSub=Math.max(...Object.values(data.subs),1);
       const hasSubs=!(Object.keys(data.subs).length===1&&Object.keys(data.subs)[0]==='General');
       const subHtml=hasSubs?`<div class="sub-bars">${Object.entries(data.subs).sort((a,b)=>b[1]-a[1]).map(([sub,val])=>`<div class="sub-bar-row"><div class="sub-bar-top"><span class="sub-bar-name">${sub}</span><span class="sub-bar-val" style="color:${col}">${sign}$${val.toFixed(0)}</span></div><div class="sub-track"><div class="sub-fill" style="width:${Math.round(val/maxSub*100)}%;background:${subCol}"></div></div></div>`).join('')}</div>`:'';
