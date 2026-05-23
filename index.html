@@ -307,15 +307,19 @@ select.field option{background:var(--s2)}
   }
 
 
-.cat-summary{background:var(--s1);border:1px solid var(--line2);border-radius:var(--r);padding:16px 20px;margin-bottom:12px;display:none}
+.cat-summary{border-radius:var(--r);padding:20px;margin-bottom:14px;display:none;position:relative;overflow:hidden}
 .cat-summary.visible{display:block}
-.cat-summary-name{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:8px}
-.cat-summary-net{font-size:36px;font-weight:900;font-family:'JetBrains Mono',monospace;letter-spacing:-0.02em;line-height:1;margin-bottom:14px}
-.cat-summary-bars{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.cat-summary-bar-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:5px}
-.cat-summary-bar-track{height:6px;background:var(--s4);border-radius:3px;overflow:hidden}
-.cat-summary-bar-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
-.cat-summary-bar-val{font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-top:5px}
+.cat-summary::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;opacity:.08;pointer-events:none}
+.cat-summary-name{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.18em;margin-bottom:10px}
+.cat-summary-net{font-size:42px;font-weight:900;font-family:'JetBrains Mono',monospace;letter-spacing:-0.03em;line-height:1;margin-bottom:6px}
+.cat-summary-subtitle{font-size:12px;color:var(--t3);font-weight:500;margin-bottom:18px}
+.cat-summary-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cat-summary-side{background:rgba(0,0,0,.2);border-radius:var(--rs);padding:12px 14px}
+.cat-summary-side-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;margin-bottom:6px}
+.cat-summary-side-val{font-size:20px;font-weight:800;font-family:'JetBrains Mono',monospace;margin-bottom:8px}
+.cat-summary-side-track{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.cat-summary-side-fill{height:100%;border-radius:2px;transition:width .7s cubic-bezier(.4,0,.2,1)}
+.cat-summary-txcount{font-size:10px;color:var(--t3);margin-top:5px}
 </style>
 </head>
 <body>
@@ -517,16 +521,19 @@ select.field option{background:var(--s2)}
       <div class="cat-summary" id="cat-summary">
         <div class="cat-summary-name" id="cat-summary-name"></div>
         <div class="cat-summary-net" id="cat-summary-net"></div>
-        <div class="cat-summary-bars">
-          <div>
-            <div class="cat-summary-bar-label" style="color:var(--up)">Income</div>
-            <div class="cat-summary-bar-track"><div class="cat-summary-bar-fill" id="cat-inc-fill" style="background:var(--up)"></div></div>
-            <div class="cat-summary-bar-val" id="cat-inc-val" style="color:var(--up)"></div>
+        <div class="cat-summary-subtitle" id="cat-summary-subtitle"></div>
+        <div class="cat-summary-row">
+          <div class="cat-summary-side" id="cat-inc-side">
+            <div class="cat-summary-side-label" style="color:var(--up)">Income</div>
+            <div class="cat-summary-side-val" id="cat-inc-val" style="color:var(--up)"></div>
+            <div class="cat-summary-side-track"><div class="cat-summary-side-fill" id="cat-inc-fill" style="background:var(--up)"></div></div>
+            <div class="cat-summary-txcount" id="cat-inc-count"></div>
           </div>
-          <div>
-            <div class="cat-summary-bar-label" style="color:var(--dn)">Expenses</div>
-            <div class="cat-summary-bar-track"><div class="cat-summary-bar-fill" id="cat-exp-fill" style="background:var(--dn)"></div></div>
-            <div class="cat-summary-bar-val" id="cat-exp-val" style="color:var(--dn)"></div>
+          <div class="cat-summary-side" id="cat-exp-side">
+            <div class="cat-summary-side-label" style="color:var(--dn)">Expenses</div>
+            <div class="cat-summary-side-val" id="cat-exp-val" style="color:var(--dn)"></div>
+            <div class="cat-summary-side-track"><div class="cat-summary-side-fill" id="cat-exp-fill" style="background:var(--dn)"></div></div>
+            <div class="cat-summary-txcount" id="cat-exp-count"></div>
           </div>
         </div>
       </div>
@@ -974,22 +981,31 @@ function setCatFilter(cat,btn){
   const summary=document.getElementById('cat-summary');
   if(cat){
     const catTxs=txs.filter(t=>t.category===cat);
-    const inc=catTxs.filter(t=>t.type==='income').reduce((s,t)=>s+parseFloat(t.amount),0);
-    const exp=catTxs.filter(t=>t.type!=='income').reduce((s,t)=>s+parseFloat(t.amount),0);
+    const incTxs=catTxs.filter(t=>t.type==='income');
+    const expTxs=catTxs.filter(t=>t.type!=='income');
+    const inc=incTxs.reduce((s,t)=>s+parseFloat(t.amount),0);
+    const exp=expTxs.reduce((s,t)=>s+parseFloat(t.amount),0);
     const net=inc-exp;
     const isPos=net>=0;
     const max=Math.max(inc,exp,1);
+    const col=isPos?'var(--up)':'var(--dn)';
+    const colAlpha=isPos?'rgba(26,212,114,':'rgba(240,61,95,';
     document.getElementById('cat-summary-name').textContent=cat;
     document.getElementById('cat-summary-net').textContent=(isPos?'+':'')+'\$'+Math.abs(net).toFixed(0);
-    document.getElementById('cat-summary-net').style.color=isPos?'var(--up)':'var(--dn)';
+    document.getElementById('cat-summary-net').style.color=col;
+    document.getElementById('cat-summary-subtitle').textContent=catTxs.length+' transaction'+(catTxs.length!==1?'s':'')+' total';
     document.getElementById('cat-inc-fill').style.width=Math.round(inc/max*100)+'%';
     document.getElementById('cat-exp-fill').style.width=Math.round(exp/max*100)+'%';
     document.getElementById('cat-inc-val').textContent='+\$'+inc.toFixed(0);
-    document.getElementById('cat-exp-val').textContent='-\$'+exp.toFixed(0);
+    document.getElementById('cat-exp-val').textContent=exp>0?'-\$'+exp.toFixed(0):'\$0';
+    document.getElementById('cat-inc-count').textContent=incTxs.length+' transaction'+(incTxs.length!==1?'s':'');
+    document.getElementById('cat-exp-count').textContent=expTxs.length+' transaction'+(expTxs.length!==1?'s':'');
     summary.classList.add('visible');
-    // Border color based on net
-    summary.style.borderColor=isPos?'rgba(26,212,114,0.3)':'rgba(240,61,95,0.3)';
-    summary.style.background=isPos?'rgba(26,212,114,0.04)':'rgba(240,61,95,0.04)';
+    summary.style.background='linear-gradient(135deg,'+colAlpha+'0.06) 0%,var(--s1) 100%)';
+    summary.style.border='1px solid '+colAlpha+'0.25)';
+    const blob=document.querySelector('#cat-summary::before');
+    // Use pseudo via inline var
+    summary.style.setProperty('--dot-col',colAlpha+'0.3)');
   } else {
     summary.classList.remove('visible');
   }
